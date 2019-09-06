@@ -1,114 +1,113 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
+import React from 'react';
+import { Alert, StyleSheet, Platform, Image, Text, View, Button, ScrollView } from 'react-native';
+import SetrowPush from "./SetrowPush";
 
-import React, {Fragment} from 'react';
-import {
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  StatusBar,
-} from 'react-native';
+export default class App extends React.Component {
+  constructor() {
+    super();
+    this.state = {};
+  }
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  async componentDidMount() {
+    await SetrowPush.init();
+    this.removeNotificationOpenedListener = SetrowPush.onNotificationOpenedListener();
+    this.removeNotificationDisplayedListener = SetrowPush.onNotificationDisplayedListener();
+    this.removeNotificationListener = SetrowPush.onNotificationListener();
+    this.removeTokenRefreshListener = SetrowPush.onTokenRefreshListener();
+  }
 
-const App = () => {
-  return (
-    <Fragment>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
+  componentWillUnmount() {
+    this.removeNotificationDisplayedListener();
+    this.removeNotificationListener();
+    this.removeNotificationOpenedListener();
+    this.removeTokenRefreshListener();
+  }
+
+  render() {
+    return (
+        <ScrollView>
+          <View style={styles.container}>
+            <Image source={require('./assets/ReactNativeFirebase.png')} style={[styles.logo]}/>
+            <Text style={styles.welcome}>
+              Setrow Push{'\n'} React Native w/ Firebase
+            </Text>
+            <View style={styles.modules}>
+              <Button title={'check Permission'} onPress={() => {
+                SetrowPush.checkPermission().then((res) => {
+                  Alert.alert('Permission Status', res);
+                }).catch((err) => {
+                  Alert.alert('Permission Status', err)
+                })
+              }}/>
             </View>
-          )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.js</Text> to change this
-                screen and then come back to see your edits.
-              </Text>
+            <View style={styles.modules}>
+              <Button title={'Request Permission'} onPress={() => {
+                SetrowPush.requestPermission().then((res) => {
+                  Alert.alert('Permission Request', res);
+                }).catch((err) => {
+                  Alert.alert('Permission Request', err)
+                })
+              }}/>
             </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
+            <View style={styles.modules}>
+              <Button title={'Get Token'} onPress={() => {
+                SetrowPush.getToken().then((token) => {
+                  Alert.alert('Token', token);
+                  console.log(token);
+                }).catch((err) => {
+                  Alert.alert('Error', err)
+                })
+              }}/>
             </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
+            <View style={styles.modules}>
+              <Button title={'External Storage Access'} onPress={() => {
+                SetrowPush.checkExternalStoragePermission().then((res) => {
+                  Alert.alert('Permission Request', res);
+                }).catch((err) => {
+                  Alert.alert('Permission Request', err)
+                })
+              }}/>
             </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
           </View>
         </ScrollView>
-      </SafeAreaView>
-    </Fragment>
-  );
-};
+    );
+  }
+}
 
 const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
   },
-  engine: {
-    position: 'absolute',
-    right: 0,
+  logo: {
+    height: 120,
+    marginBottom: 16,
+    marginTop: 64,
+    padding: 10,
+    width: 135,
   },
-  body: {
-    backgroundColor: Colors.white,
+  welcome: {
+    fontSize: 20,
+    textAlign: 'center',
+    margin: 10,
   },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  instructions: {
+    textAlign: 'center',
+    color: '#333333',
+    marginBottom: 5,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
+  modules: {
+    margin: 20,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
+  modulesHeader: {
+    fontSize: 16,
+    marginBottom: 8,
   },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
-  },
+  module: {
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: 'center',
+  }
 });
-
-export default App;
