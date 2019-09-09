@@ -143,6 +143,12 @@ export default class SetrowPush {
     })
   }
 
+  static onMessageListener() {
+    return firebase.messaging().onMessage((message: RemoteMessage)=> {
+      console.log('Event: onMessage', message);
+    })
+  }
+
   static onNotificationDisplayedListener() {
     return firebase.notifications().onNotificationDisplayed((notification: Notification) => {
       // ANDROID: Remote notifications do not contain the channel ID. You will have to specify this manually if you'd like to re-display the notification.
@@ -159,19 +165,19 @@ export default class SetrowPush {
     });
   }
 
-  static onTokenRefreshListener() {
-    // The onTokenRefresh callback fires with the latest registration token whenever a new token is generated.
-    return firebase.messaging().onTokenRefresh(fcmToken => {
-      // Some code...
-    });
-  }
-
   static onNotificationOpenedListener() {
     return firebase.notifications().onNotificationOpened((notificationOpen: NotificationOpen) => {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
 
       console.log('Event: Notification opened - onNotificationOpened');
+    });
+  }
+
+  static onTokenRefreshListener() {
+    // The onTokenRefresh callback fires with the latest registration token whenever a new token is generated.
+    return firebase.messaging().onTokenRefresh(fcmToken => {
+      // Some code...
     });
   }
 
