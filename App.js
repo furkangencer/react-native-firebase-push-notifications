@@ -53,7 +53,6 @@ export default class App extends React.Component {
               <Button title={'Get Token'} onPress={() => {
                 SetrowPush.getToken().then((token) => {
                   Alert.alert('Token', token);
-                  console.log(token);
                 }).catch((err) => {
                   Alert.alert('Error', err)
                 })

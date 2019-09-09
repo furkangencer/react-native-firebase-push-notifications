@@ -28,7 +28,9 @@ target 'rnpush' do
   pod 'Folly', :podspec => '../node_modules/react-native/third-party-podspecs/Folly.podspec'
 
 
-  pod 'RNFirebase', :path => '../node_modules/react-native-firebase'
+  #pod 'RNFirebase', :path => '../node_modules/react-native-firebase'
+  pod 'Firebase/Analytics'
+  pod 'Firebase/Messaging'
 
   target 'rnpushTests' do
     inherit! :search_paths
