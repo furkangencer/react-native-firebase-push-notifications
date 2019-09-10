@@ -146,6 +146,7 @@ export default class SetrowPush {
   static onMessageListener() {
     return firebase.messaging().onMessage((message: RemoteMessage)=> {
       console.log('Event: onMessage', message);
+        this.displayLocalNotification(message, true);
     })
   }
 
@@ -196,14 +197,17 @@ export default class SetrowPush {
     }
   }
 
-  static displayLocalNotification(notification: Notification) {
+  static displayLocalNotification(notification: Notification, dataOnly=false) {
     this.createAndroidChannel().then(async () => {
+      let notID = dataOnly ? notification._messageId : notification._notificationId;
+      let title = dataOnly ? notification.data.title : notification.title;
+      let body = dataOnly ? notification.data.body : notification.body;
       const localNotification = await new firebase.notifications.Notification({
         show_in_foreground: true,
-        notificationId: notification._notificationId,
-        title: notification.title,
-        body: notification.body,
-        data: notification._data, //data: notification._android._notification._data
+        notificationId: notID,
+        title: title,
+        body: body,
+        //data: notification._data, //data: notification._android._notification._data
       })
           .setSound(notification.data.sound)
           .android.setChannelId('push')

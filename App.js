@@ -13,6 +13,7 @@ export default class App extends React.Component {
     this.removeNotificationOpenedListener = SetrowPush.onNotificationOpenedListener();
     this.removeNotificationDisplayedListener = SetrowPush.onNotificationDisplayedListener();
     this.removeNotificationListener = SetrowPush.onNotificationListener();
+    this.removeMessageListener = SetrowPush.onMessageListener();
     this.removeTokenRefreshListener = SetrowPush.onTokenRefreshListener();
   }
 
@@ -20,6 +21,7 @@ export default class App extends React.Component {
     this.removeNotificationDisplayedListener();
     this.removeNotificationListener();
     this.removeNotificationOpenedListener();
+    this.removeMessageListener();
     this.removeTokenRefreshListener();
   }
 
