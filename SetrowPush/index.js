@@ -166,11 +166,12 @@ export default class SetrowPush {
   }
 
   static onNotificationOpenedListener() {
-    return firebase.notifications().onNotificationOpened((notificationOpen: NotificationOpen) => {
+    return firebase.notifications().onNotificationOpened(async (notificationOpen: NotificationOpen) => {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
 
       console.log('Event: Notification opened - onNotificationOpened');
+      await firebase.notifications().removeDeliveredNotification(notification._notificationId);
     });
   }
 
@@ -196,26 +197,21 @@ export default class SetrowPush {
   }
 
   static displayLocalNotification(notification: Notification) {
-    const localNotification = new firebase.notifications.Notification({
-      sound: 'default',
-      show_in_foreground: true,
-    })
-      .setNotificationId(notification._notificationId)
-      .setTitle(notification.title)
-      .setBody(notification.body)
-      //.setData(notification.data)
-      .setData({
-        key1: 'value1',
-        key2: 'value2',
+    this.createAndroidChannel().then(async () => {
+      const localNotification = await new firebase.notifications.Notification({
+        show_in_foreground: true,
+        notificationId: notification._notificationId,
+        title: notification.title,
+        body: notification.body,
+        data: notification._data, //data: notification._android._notification._data
+        sound: notification._sound // 'default'
       })
-      .setSound('default');
-    localNotification.android.setChannelId('setrow-push');
-    localNotification.android.setSmallIcon('ic_launcher');
-    localNotification.android.setPriority(firebase.notifications.Android.Priority.Max);
-    localNotification.android.setVibrate(1000);
-    localNotification.ios.setBadge(2);
-    this.createAndroidChannel(true).then(() => {
-      firebase.notifications().displayNotification(localNotification);
+          .android.setChannelId('push')
+          .android.setSmallIcon('ic_launcher')
+          .android.setPriority(firebase.notifications.Android.Priority.Max)
+          .android.setVibrate(1000);
+          // .ios.setBadge(2);
+      await firebase.notifications().displayNotification(localNotification);
       console.log('Local notification has been displayed');
     });
   }
