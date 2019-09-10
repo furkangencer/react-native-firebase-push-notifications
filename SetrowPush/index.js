@@ -204,15 +204,18 @@ export default class SetrowPush {
         title: notification.title,
         body: notification.body,
         data: notification._data, //data: notification._android._notification._data
-        sound: notification._sound // 'default'
       })
+          .setSound(notification.data.sound)
           .android.setChannelId('push')
           .android.setSmallIcon('ic_launcher')
           .android.setPriority(firebase.notifications.Android.Priority.Max)
           .android.setVibrate(1000);
           // .ios.setBadge(2);
-      await firebase.notifications().displayNotification(localNotification);
-      console.log('Local notification has been displayed');
+      await firebase.notifications().displayNotification(localNotification).then(()=> {
+        console.log('Local notification has been displayed');
+      }).catch((err)=> {
+        console.log(err);
+      });
     });
   }
 }
