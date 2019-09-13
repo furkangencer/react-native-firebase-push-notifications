@@ -27,59 +27,57 @@ export default class App extends React.Component {
 
   render() {
     return (
-        <ScrollView>
-          <View style={styles.container}>
-            <Image source={require('./assets/ReactNativeFirebase.png')} style={[styles.logo]}/>
-            <Text style={styles.welcome}>
-              Setrow Push{'\n'} React Native w/ Firebase
-            </Text>
-            <View style={styles.modules}>
-              <Button title={'Check Permission'} onPress={() => {
-                SetrowPush.checkPermission().then((res) => {
-                  Alert.alert('Permission Status', res);
-                }).catch((err) => {
-                  Alert.alert('Permission Status', err)
-                })
-              }}/>
-            </View>
-            <View style={styles.modules}>
-              <Button title={'Request Permission'} onPress={() => {
-                SetrowPush.requestPermission().then((res) => {
-                  Alert.alert('Permission Request', res);
-                }).catch((err) => {
-                  Alert.alert('Permission Request', err)
-                })
-              }}/>
-            </View>
-            <View style={styles.modules}>
-              <Button title={'Get Token'} onPress={() => {
-                SetrowPush.getToken().then((token) => {
-                  Alert.alert('Token', token);
-                }).catch((err) => {
-                  Alert.alert('Error', err)
-                })
-              }}/>
-            </View>
-            <View style={styles.modules}>
-              <Button title={'External Storage Access'} onPress={() => {
-                SetrowPush.checkExternalStoragePermission().then((res) => {
-                  Alert.alert('Permission Request', res);
-                }).catch((err) => {
-                  Alert.alert('Permission Request', err)
-                })
-              }}/>
-            </View>
-            <View style={styles.modules}>
-              <Button title={'Device Info'} onPress={() => {
-                SetrowPush.getDeviceInfo().then((res) => {
-                  Alert.alert('Device Info', res);
-                }).catch((err) => {
-                  Alert.alert('Error', err)
-                })
-              }}/>
-            </View>
-          </View>
-        </ScrollView>
+      <View style={styles.container}>
+        <Image source={require('./assets/wdc.png')} style={[styles.logo]}/>
+        <Text style={styles.welcome}>
+          WDC Push{'\n'} React Native w/ Firebase
+        </Text>
+        <View style={styles.modules}>
+          <Button title={'Check Permission'} onPress={() => {
+            SetrowPush.checkPermission().then((res) => {
+              Alert.alert('Permission Status', res);
+            }).catch((err) => {
+              Alert.alert('Permission Status', err)
+            })
+          }}/>
+        </View>
+        <View style={styles.modules}>
+          <Button title={'Request Permission'} onPress={() => {
+            SetrowPush.requestPermission().then((res) => {
+              Alert.alert('Permission Request', res);
+            }).catch((err) => {
+              Alert.alert('Permission Request', err)
+            })
+          }}/>
+        </View>
+        <View style={styles.modules}>
+          <Button title={'Get Token'} onPress={() => {
+            SetrowPush.getToken().then((token) => {
+              Alert.alert('Token', token);
+            }).catch((err) => {
+              Alert.alert('Error', err)
+            })
+          }}/>
+        </View>
+        <View style={styles.modules}>
+          <Button title={'External Storage Access'} onPress={() => {
+            SetrowPush.checkExternalStoragePermission().then((res) => {
+              Alert.alert('Permission Request', res);
+            }).catch((err) => {
+              Alert.alert('Permission Request', err)
+            })
+          }}/>
+        </View>
+        <View style={styles.modules}>
+          <Button title={'Device Info'} onPress={() => {
+            SetrowPush.getDeviceInfo().then((res) => {
+              Alert.alert('Device Info', res);
+            }).catch((err) => {
+              Alert.alert('Error', err)
+            })
+          }}/>
+        </View>
+      </View>
     );
   }
 }
