@@ -34,7 +34,7 @@ export default class App extends React.Component {
               Setrow Push{'\n'} React Native w/ Firebase
             </Text>
             <View style={styles.modules}>
-              <Button title={'check Permission'} onPress={() => {
+              <Button title={'Check Permission'} onPress={() => {
                 SetrowPush.checkPermission().then((res) => {
                   Alert.alert('Permission Status', res);
                 }).catch((err) => {
@@ -69,6 +69,15 @@ export default class App extends React.Component {
                 })
               }}/>
             </View>
+            <View style={styles.modules}>
+              <Button title={'Device Info'} onPress={() => {
+                SetrowPush.getDeviceInfo().then((res) => {
+                  Alert.alert('Device Info', res);
+                }).catch((err) => {
+                  Alert.alert('Error', err)
+                })
+              }}/>
+            </View>
           </View>
         </ScrollView>
     );
@@ -83,11 +92,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5FCFF',
   },
   logo: {
-    height: 120,
+    height: 60,
     marginBottom: 16,
     marginTop: 64,
     padding: 10,
-    width: 135,
+    width: 67.5,
   },
   welcome: {
     fontSize: 20,

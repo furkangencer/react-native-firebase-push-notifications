@@ -1,6 +1,7 @@
 import { PermissionsAndroid, Platform, AsyncStorage } from 'react-native';
 import firebase from 'react-native-firebase';
 import type { Notification, NotificationOpen } from 'react-native-firebase';
+import DeviceInfo from 'react-native-device-info';
 
 export default class SetrowPush {
   constructor(){
@@ -141,6 +142,18 @@ export default class SetrowPush {
         reject(err)
       });
     })
+  }
+
+  static getDeviceInfo() {
+    return new Promise(async (resolve, reject)=>{
+      let infoObject = {
+        uniqueId: await DeviceInfo.getUniqueId().then(id => id),
+        brand: await  DeviceInfo.getBrand().then(brand=>brand),
+        model: await DeviceInfo.getDeviceId().then(id => id),
+        osVersion: await DeviceInfo.getSystemVersion().then(version=>version)
+      };
+      resolve(infoObject);
+    });
   }
 
   static onMessageListener() {

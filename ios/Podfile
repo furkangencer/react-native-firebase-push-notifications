@@ -32,6 +32,8 @@ target 'rnpush' do
   pod 'Firebase/Analytics'
   pod 'Firebase/Messaging'
 
+  pod 'RNDeviceInfo', :path => '../node_modules/react-native-device-info'
+
   target 'rnpushTests' do
     inherit! :search_paths
     # Pods for testing
