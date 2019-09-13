@@ -8,9 +8,9 @@ export default class SetrowPush {
 
   }
 
-  static async init(mkodu) {
-    this._mkodu = mkodu;
-    // mkodu check???
+  static async init(key) {
+    this._key = key;
+    // key check???
     await this.checkIfOpenedByNotification();
     await this.checkPermission()
       .then(()=> this.getToken())
@@ -160,6 +160,7 @@ export default class SetrowPush {
     return firebase.messaging().onMessage((message: RemoteMessage)=> {
       console.log('Event: onMessage', message);
         this.displayLocalNotification(message, true);
+        // TODO: send log to backend
     })
   }
 
@@ -168,6 +169,7 @@ export default class SetrowPush {
       // ANDROID: Remote notifications do not contain the channel ID. You will have to specify this manually if you'd like to re-display the notification.
       console.log('Event: Notification displayed - onNotificationDisplayed', notification);
       // this.displayLocalNotification(notification); // Android'de sonsuz döngüye sokuyor
+      // TODO: send log to backend (ios açılma bilgisi => ios'ta app background ve foreground'dayken push gelince bu event fırlıyor )
     });
   }
 
@@ -176,6 +178,7 @@ export default class SetrowPush {
       // BURAYI TEST ET==> notification.android.setChannelId('setrow-push').setSound('default');
       console.log('Event: Notification received - onNotification', notification);
       this.displayLocalNotification(notification);
+      // TODO: send log to backend (for only android)
     });
   }
 
@@ -186,13 +189,14 @@ export default class SetrowPush {
 
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
+      // TODO: send log to backend
     });
   }
 
   static onTokenRefreshListener() {
     // The onTokenRefresh callback fires with the latest registration token whenever a new token is generated.
     return firebase.messaging().onTokenRefresh(fcmToken => {
-      // Some code...
+      // TODO: send to backend
     });
   }
 
@@ -205,6 +209,7 @@ export default class SetrowPush {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
 
+      // TODO: send log to backend
     }else {
       console.log('Not opened by notification', notificationOpen);
     }
