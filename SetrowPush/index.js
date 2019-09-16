@@ -149,7 +149,9 @@ export default class SetrowPush {
       let infoObject = {
         uniqueId: await DeviceInfo.getUniqueId().then(id => id),
         brand: await  DeviceInfo.getBrand().then(brand=>brand),
-        model: await DeviceInfo.getDeviceId().then(id => id),
+        model: await DeviceInfo.getModel().then(model => model),
+        deviceId: await DeviceInfo.getDeviceId().then(id => id),
+        //product: await DeviceInfo.getProduct().then(product => product),
         osVersion: await DeviceInfo.getSystemVersion().then(version=>version)
       };
       console.log(infoObject);
