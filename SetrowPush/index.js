@@ -211,7 +211,7 @@ export default class SetrowPush {
       console.log('App is opened because of notification interaction');
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
-
+      await firebase.notifications().removeDeliveredNotification(notification._notificationId);
       // TODO: send log to backend
     }else {
       console.log('Not opened by notification', notificationOpen);
