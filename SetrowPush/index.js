@@ -152,6 +152,7 @@ export default class SetrowPush {
         model: await DeviceInfo.getDeviceId().then(id => id),
         osVersion: await DeviceInfo.getSystemVersion().then(version=>version)
       };
+      console.log(infoObject);
       resolve(infoObject);
     });
   }

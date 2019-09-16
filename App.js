@@ -28,7 +28,7 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Image source={require('./assets/wdc.png')} style={[styles.logo]}/>
+        <Image source={require('./assets/wdc.png')}/>
         <Text style={styles.welcome}>
           WDC Push{'\n'} React Native w/ Firebase
         </Text>
@@ -88,13 +88,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
-  },
-  logo: {
-    height: 60,
-    marginBottom: 16,
-    marginTop: 64,
-    padding: 10,
-    width: 67.5,
   },
   welcome: {
     fontSize: 20,
