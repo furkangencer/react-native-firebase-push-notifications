@@ -9,18 +9,22 @@ export default class SetrowPush {
   }
 
   static async init(key) {
-    this._key = key;
-    // key check???
-    await this.checkIfOpenedByNotification();
-    await this.checkPermission()
-      .then(()=> this.getToken())
-      .then(()=> this.createAndroidChannel(true))
-      .then((res) => {
-        console.log('Everything is up and running!');
-    }).catch((err) => {
-      console.log(err);
-    });
+    this.auth(key)
+      .then(() => this.checkIfOpenedByNotification())
+      .then(() => this.checkPermission())
+      .then(() => this.getToken())
+      .then(() => this.createAndroidChannel(true))
+      .then((res) => console.log('Everything is up and running!'))
+      .catch((err) => console.log(err));
   }
+
+  static auth(key) {
+    return new Promise((resolve, reject) => {
+      // TODO: Check the auth object in storage if exists. If exists and true, continue. If exists and false, check timestamp to see if enough time has passed to retry the authentication.
+      //  If the auth object not exists, send apikey to backend for auth and then store the response in storage with timestamp. e.g: {auth: true, time: Date.now()}
+      resolve(true);
+    })
+  };
 
   static createAndroidChannel(createChannelGroup=false) {
     return new Promise( (resolve, reject) => {
@@ -127,20 +131,74 @@ export default class SetrowPush {
     })
   }
 
-  static sendToBackend(url, body) {
+  static sendToBackend(url, headers, body) {
     return new Promise((resolve, reject) => {
-      fetch('url', {
+      fetch(url, {
         method: 'POST',
         headers: {
-          Accept: 'application/json',
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          ...headers
         },
         body: JSON.stringify(body),
       }).then((res) => {
-        resolve(res)
+        resolve(res.json())
       }).catch((err) => {
         reject(err)
       });
+    })
+  }
+
+  static requestFCMEndpoint(appServerKey, data) {
+    return new Promise(async (resolve, reject) => {
+      const appServerKey = 'AAAAQ16OIbY:APA91bEg4Ee8OCeLVmx7BKhaKet1SjFyBvgGFvWl15MDykF_ezEbQifYtxamChytUdsqEi_maaz4GWt7LElPyTU2DERpj1AB1xtOycIoLw1-4DGk3ijSJI5BezrrsNDEB1Hi8w-eKM3U';
+      let token = await this.getToken();
+      let reqBody = {
+        registration_ids: [token],
+        priority: 'high',
+        time_to_live: 2419200
+      };
+      if(Platform.OS === "android") {
+        reqBody.data = {
+          some_key: 'some value',
+          sound: 'default',
+          title: 'Check this Mobile (title)',
+          body: 'Rich Notification testing (body)',
+          badge: 0,
+          subtitle: '',
+          click_action: '',
+          android_channel_id: 'push',
+          tag: 'SetrowPush',
+          ...data
+        };
+      }else if(Platform.OS === "ios") {
+        reqBody.content_available = true;
+        reqBody.data = {
+          some_key: 'some value',
+          sound: 'default'
+        };
+        reqBody.notification = {
+          title: 'Check this Mobile (title)',
+          body: 'Notification testing (body)',
+          sound: 'default',
+          badge: 0,
+          subtitle: '',
+          click_action: '',
+          tag: 'SetrowPush',
+          ...data
+        }
+      }
+      let reqHeaders = {
+        Authorization: 'key='+appServerKey
+      };
+
+      this.sendToBackend('https://fcm.googleapis.com/fcm/send', reqHeaders , reqBody)
+        .then((res) => {
+          resolve(res);
+        })
+        .catch((err) => {
+          reject(err);
+        })
     })
   }
 

@@ -77,6 +77,17 @@ export default class App extends React.Component {
             })
           }}/>
         </View>
+        <View style={styles.modules}>
+          <Button title={'Send Remote Data-Only Push'} onPress={() => {
+            SetrowPush.requestFCMEndpoint()
+              .then((res) => {
+                console.log('Fetch result: ', res);
+              })
+              .catch((err) => {
+                console.log(err);
+              })
+          }}/>
+        </View>
       </View>
     );
   }
