@@ -159,6 +159,7 @@ export default class SetrowPush {
         time_to_live: 2419200
       };
       if(Platform.OS === "android") {
+        // Data-Only message
         reqBody.data = {
           some_key: 'some value',
           sound: 'default',
@@ -172,6 +173,7 @@ export default class SetrowPush {
           ...data
         };
       }else if(Platform.OS === "ios") {
+        // Notification + Data message
         reqBody.content_available = true;
         reqBody.data = {
           some_key: 'some value',
