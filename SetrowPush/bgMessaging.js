@@ -7,7 +7,7 @@ import SetrowPush from "./index";
 export default async (message: RemoteMessage) => {
     // handle your message
     console.log(message);
-    SetrowPush.notificationData = message.data;
+    message._data = message.data;
     SetrowPush.displayLocalNotification(message, true);
     return Promise.resolve();
 }

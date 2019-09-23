@@ -8,8 +8,6 @@ export default class SetrowPush {
 
   }
 
-  static notificationData;
-
   static async init(key, callback) {
     this.auth(key)
       .then(() => this.checkIfOpenedByNotification(callback))
@@ -221,7 +219,6 @@ export default class SetrowPush {
   static onMessageListener() {
     return firebase.messaging().onMessage((message: RemoteMessage)=> {
       console.log('Event: onMessage', message);
-      this.notificationData = message._data;
       this.displayLocalNotification(message, true);
       // TODO: send log to backend
     })
@@ -252,8 +249,7 @@ export default class SetrowPush {
 
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      callback(this.notificationData);
-      this.notificationData = {};
+      callback(notification.data);
       // TODO: send log to backend
     });
   }
@@ -274,8 +270,7 @@ export default class SetrowPush {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      callback(this.notificationData);
-      this.notificationData = {};
+      callback(notification.data);
       // TODO: send log to backend
     }else {
       console.log('Not opened by notification', notificationOpen);
@@ -292,7 +287,7 @@ export default class SetrowPush {
         notificationId: notID,
         title: title,
         body: body,
-        //data: notification._data, //data: notification._android._notification._data
+        data: notification._data
       })
           .setSound(notification.data.sound)
           .android.setChannelId('push')
