@@ -8,14 +8,16 @@ export default class SetrowPush {
 
   }
 
-  static async init(key) {
+  static notificationData;
+
+  static async init(key, callback) {
     this.auth(key)
-      .then(() => this.checkIfOpenedByNotification())
+      .then(() => this.checkIfOpenedByNotification(callback))
       .then(() => this.checkPermission())
       .then(() => this.getToken())
       .then(() => this.createAndroidChannel(true))
-      .then((res) => console.log('Everything is up and running!'))
-      .catch((err) => console.log(err));
+      .then(res => console.log('Everything is up and running!'))
+      .catch(err => console.log(err));
   }
 
   static auth(key) {
@@ -94,14 +96,12 @@ export default class SetrowPush {
       if (!fcmToken) {
         fcmToken = await firebase.messaging().getToken();
         if (fcmToken) {
-          await console.log(fcmToken);
           await AsyncStorage.setItem('fcmToken', fcmToken);
           resolve(fcmToken);
         }else{
           reject(false);
         }
       }else {
-        await console.log(fcmToken);
         resolve(fcmToken);
       }
     })
@@ -151,7 +151,6 @@ export default class SetrowPush {
 
   static requestFCMEndpoint(appServerKey, data) {
     return new Promise(async (resolve, reject) => {
-      const appServerKey = 'AAAAQ16OIbY:APA91bEg4Ee8OCeLVmx7BKhaKet1SjFyBvgGFvWl15MDykF_ezEbQifYtxamChytUdsqEi_maaz4GWt7LElPyTU2DERpj1AB1xtOycIoLw1-4DGk3ijSJI5BezrrsNDEB1Hi8w-eKM3U';
       let token = await this.getToken();
       let reqBody = {
         registration_ids: [token],
@@ -222,8 +221,9 @@ export default class SetrowPush {
   static onMessageListener() {
     return firebase.messaging().onMessage((message: RemoteMessage)=> {
       console.log('Event: onMessage', message);
-        this.displayLocalNotification(message, true);
-        // TODO: send log to backend
+      this.notificationData = message._data;
+      this.displayLocalNotification(message, true);
+      // TODO: send log to backend
     })
   }
 
@@ -245,13 +245,15 @@ export default class SetrowPush {
     });
   }
 
-  static onNotificationOpenedListener() {
+  static onNotificationOpenedListener(callback) {
     return firebase.notifications().onNotificationOpened(async (notificationOpen: NotificationOpen) => {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
 
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
+      callback(this.notificationData);
+      this.notificationData = {};
       // TODO: send log to backend
     });
   }
@@ -263,7 +265,7 @@ export default class SetrowPush {
     });
   }
 
-  static async checkIfOpenedByNotification() {
+  static async checkIfOpenedByNotification(callback) {
     // To check if the app was opened by a notification being clicked / tapped / opened :
     const notificationOpen: NotificationOpen = await firebase.notifications().getInitialNotification();
     if (notificationOpen) {
@@ -272,6 +274,8 @@ export default class SetrowPush {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
+      callback(this.notificationData);
+      this.notificationData = {};
       // TODO: send log to backend
     }else {
       console.log('Not opened by notification', notificationOpen);

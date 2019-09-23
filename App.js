@@ -9,8 +9,12 @@ export default class App extends React.Component {
   }
 
   async componentDidMount() {
-    await SetrowPush.init();
-    this.removeNotificationOpenedListener = SetrowPush.onNotificationOpenedListener();
+    await SetrowPush.init('<APIKEY>', (data) => {
+      console.log('Dummy callback executed.', data);
+    });
+    this.removeNotificationOpenedListener = SetrowPush.onNotificationOpenedListener((data) => {
+      console.log('Dummy callback executed.', data);
+    });
     this.removeNotificationDisplayedListener = SetrowPush.onNotificationDisplayedListener();
     this.removeNotificationListener = SetrowPush.onNotificationListener();
     this.removeMessageListener = SetrowPush.onMessageListener();
@@ -53,6 +57,7 @@ export default class App extends React.Component {
         <View style={styles.modules}>
           <Button title={'Get Token'} onPress={() => {
             SetrowPush.getToken().then((token) => {
+              console.log(token);
               Alert.alert('Token', token);
             }).catch((err) => {
               Alert.alert('Error', err)
@@ -79,7 +84,7 @@ export default class App extends React.Component {
         </View>
         <View style={styles.modules}>
           <Button title={'Send Remote Push'} onPress={() => {
-            SetrowPush.requestFCMEndpoint()
+            SetrowPush.requestFCMEndpoint('AAAAQ16OIbY:APA91bEg4Ee8OCeLVmx7BKhaKet1SjFyBvgGFvWl15MDykF_ezEbQifYtxamChytUdsqEi_maaz4GWt7LElPyTU2DERpj1AB1xtOycIoLw1-4DGk3ijSJI5BezrrsNDEB1Hi8w-eKM3U')
               .then((res) => {
                 console.log('Fetch result: ', res);
               })
