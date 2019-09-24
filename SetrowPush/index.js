@@ -13,7 +13,7 @@ export default class SetrowPush {
   static callbackFunc = () => {};
 
   /**
-   * İnitiates the Push Notificaiton Service
+   * Initiates the Push Notificaiton Service
    * @param key {string} WDC key
    * @param [userEmail] {string=""} Device user's email
    * @param [callbackToRegister] {function} Callback function to call on notificationClick events. With this callback, you can access the custom key-value pairs that you specified in the notification body.
@@ -186,6 +186,7 @@ export default class SetrowPush {
           click_action: '',
           android_channel_id: 'push',
           tag: 'SetrowPush',
+          image: "http://www.three.co.uk/hub/wp-content/uploads/Google-logo-1-resized.jpg",
           ...data
         };
       }else if(Platform.OS === "ios") {
@@ -309,6 +310,7 @@ export default class SetrowPush {
         data: notification._data
       })
           .setSound(notification.data.sound)
+          .android.setBigPicture(notification.data.image)
           .android.setChannelId('push')
           .android.setSmallIcon('ic_launcher')
           .android.setPriority(firebase.notifications.Android.Priority.Max)
