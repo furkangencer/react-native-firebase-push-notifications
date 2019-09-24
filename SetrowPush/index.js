@@ -8,21 +8,40 @@ export default class SetrowPush {
 
   }
 
-  static async init(key, callback) {
-    this.auth(key)
-      .then(() => this.checkIfOpenedByNotification(callback))
+  static key;
+  static userEmail;
+  static callbackFunc = () => {};
+
+  /**
+   * İnitiates the Push Notificaiton Service
+   * @param key {string} WDC key
+   * @param [userEmail] {string=""} Device user's email
+   * @param [callbackToRegister] {function} Callback function to call on notificationClick events. With this callback, you can access the custom key-value pairs that you specified in the notification body.
+   * @returns {Promise<void>}
+   */
+  static async init(key, userEmail='', callbackToRegister) {
+    this.checkParams(key, userEmail, callbackToRegister)
+      .then(() => this.checkIfOpenedByNotification())
       .then(() => this.checkPermission())
       .then(() => this.getToken())
       .then(() => this.createAndroidChannel(true))
       .then(res => console.log('Everything is up and running!'))
-      .catch(err => console.log(err));
+      .catch(err => console.log('ERROR: Can\'t initiate push service.', err));
   }
 
-  static auth(key) {
+  static validateEmail(email) {
+    let re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+  }
+
+  static checkParams(key, userEmail, callback) {
     return new Promise((resolve, reject) => {
-      // TODO: Check the auth object in storage if exists. If exists and true, continue. If exists and false, check timestamp to see if enough time has passed to retry the authentication.
-      //  If the auth object not exists, send apikey to backend for auth and then store the response in storage with timestamp. e.g: {auth: true, time: Date.now()}
-      resolve(true);
+      if (typeof key !== "string") reject('Key must be string');
+      if (typeof userEmail !== 'string' || (userEmail.length > 0 && !this.validateEmail(userEmail)) ) reject('Email must be valid');
+      this.key = key;
+      this.userEmail = userEmail;
+      if(typeof callback === 'function') this.callbackFunc = callback;
+      resolve();
     })
   };
 
@@ -242,14 +261,14 @@ export default class SetrowPush {
     });
   }
 
-  static onNotificationOpenedListener(callback) {
+  static onNotificationOpenedListener() {
     return firebase.notifications().onNotificationOpened(async (notificationOpen: NotificationOpen) => {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
 
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      callback(notification.data);
+      this.callbackFunc(notification.data);
       // TODO: send log to backend
     });
   }
@@ -261,7 +280,7 @@ export default class SetrowPush {
     });
   }
 
-  static async checkIfOpenedByNotification(callback) {
+  static async checkIfOpenedByNotification() {
     // To check if the app was opened by a notification being clicked / tapped / opened :
     const notificationOpen: NotificationOpen = await firebase.notifications().getInitialNotification();
     if (notificationOpen) {
@@ -270,7 +289,7 @@ export default class SetrowPush {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      callback(notification.data);
+      this.callbackFunc(notification.data);
       // TODO: send log to backend
     }else {
       console.log('Not opened by notification', notificationOpen);

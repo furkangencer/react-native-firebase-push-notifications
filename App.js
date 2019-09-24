@@ -8,13 +8,13 @@ export default class App extends React.Component {
     this.state = {};
   }
 
+  dummyCallbackFunction (data) {
+    console.log('Callback executed.', data);
+  }
+
   async componentDidMount() {
-    await SetrowPush.init('<APIKEY>', (data) => {
-      console.log('Dummy callback executed.', data);
-    });
-    this.removeNotificationOpenedListener = SetrowPush.onNotificationOpenedListener((data) => {
-      console.log('Dummy callback executed.', data);
-    });
+    await SetrowPush.init('<APIKEY>', "", this.dummyCallbackFunction);
+    this.removeNotificationOpenedListener = SetrowPush.onNotificationOpenedListener();
     this.removeNotificationDisplayedListener = SetrowPush.onNotificationDisplayedListener();
     this.removeNotificationListener = SetrowPush.onNotificationListener();
     this.removeMessageListener = SetrowPush.onMessageListener();
