@@ -310,9 +310,11 @@ export default class SetrowPush {
         data: notification._data
       })
           .setSound(notification.data.sound)
+          // .ios.setLaunchImage('http://www.three.co.uk/hub/wp-content/uploads/Google-logo-1-resized.jpg')
           .android.setBigPicture(notification.data.image)
           .android.setChannelId('push')
-          .android.setSmallIcon('ic_launcher')
+          .android.setSmallIcon('ic_notification')
+          .android.setColor('#00FF00')
           .android.setPriority(firebase.notifications.Android.Priority.Max)
           .android.setVibrate(1000);
           // .ios.setBadge(2);
