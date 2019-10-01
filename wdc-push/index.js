@@ -1,51 +1,69 @@
 import { PermissionsAndroid, Platform, AsyncStorage } from 'react-native';
 import firebase from 'react-native-firebase';
-import type { Notification, NotificationOpen } from 'react-native-firebase';
+import type { Notification, NotificationOpen, RemoteMessage } from 'react-native-firebase';
 import DeviceInfo from 'react-native-device-info';
 
-export default class SetrowPush {
-  constructor(){
+export default class WDCPush {
+  #LOG_TYPES = {
+    newToken: "newToken",
+    refreshToken: "refreshToken"
+  };
+  #key;
+  #userEmail;
+  #callbackFunc = () => {};
+
+  constructor() {
 
   }
-
-  static key;
-  static userEmail;
-  static callbackFunc = () => {};
 
   /**
    * Initiates the Push Notificaiton Service
    * @param key {string} WDC key
-   * @param [userEmail] {string=""} Device user's email
    * @param [callbackToRegister] {function} Callback function to call on notificationClick events. With this callback, you can access the custom key-value pairs that you specified in the notification body.
-   * @returns {Promise<void>}
+   * @returns {Promise<R>}
    */
-  static async init(key, userEmail='', callbackToRegister) {
-    this.checkParams(key, userEmail, callbackToRegister)
-      .then(() => this.checkIfOpenedByNotification())
-      .then(() => this.checkPermission())
-      .then(() => this.getToken())
-      .then(() => this.createAndroidChannel(true))
-      .then(res => console.log('Everything is up and running!'))
-      .catch(err => console.log('ERROR: Can\'t initiate push service.', err));
+  init(key, callbackToRegister) {
+    return new Promise((resolve, reject) => {
+      this.checkParams(key, callbackToRegister)
+        .then(() => this.checkIfOpenedByNotification())
+        .then(() => this.createAndroidChannel(true))
+        .then(res => resolve(res))
+        .catch(err => reject(err))
+    })
   }
 
-  static validateEmail(email) {
+  setEmail(email) {
+    return new Promise((resolve, reject) => {
+      if (typeof email !== 'string' || (email.length > 0 && !this.validateEmail(email)) ) reject('Email must be valid');
+      //TODO: local'e yaz: await this.storeEmail(email);
+      this.#userEmail = email;
+      resolve();
+    });
+  }
+
+  setCallback(callback) {
+    return new Promise((resolve, reject) => {
+      if(typeof callback !== "function") reject('Callback must be a function');
+      this.#callbackFunc = callback;
+      resolve();
+    })
+  }
+
+  validateEmail(email) {
     let re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(String(email).toLowerCase());
   }
 
-  static checkParams(key, userEmail, callback) {
+  checkParams(key, callback) {
     return new Promise((resolve, reject) => {
       if (typeof key !== "string") reject('Key must be string');
-      if (typeof userEmail !== 'string' || (userEmail.length > 0 && !this.validateEmail(userEmail)) ) reject('Email must be valid');
-      this.key = key;
-      this.userEmail = userEmail;
-      if(typeof callback === 'function') this.callbackFunc = callback;
+      this.#key = key;
+      if(typeof callback === 'function') this.#callbackFunc = callback;
       resolve();
     })
   };
 
-  static createAndroidChannel(createChannelGroup=false) {
+  createAndroidChannel(createChannelGroup=false) {
     return new Promise( (resolve, reject) => {
       if(Platform.OS === 'android') {
         if(createChannelGroup){
@@ -71,60 +89,63 @@ export default class SetrowPush {
     });
   }
 
-  static checkPermission() {
+  requestPermissionAndGetToken() {
+    return new Promise((resolve, reject) => {
+      this.requestPermission().then(async (res) => {
+        let token = await this.getToken();
+        // TODO: Android'de izin penceresi olmadığı için local'e yaz ???
+        resolve(token)
+      }).catch(err => reject(err));
+    })
+  }
+
+  checkPermission() {
     return new Promise( async (resolve, reject) => {
       const enabled = await firebase.messaging().hasPermission();
       if (enabled) {
         // user has permissions
-        await console.log('Has Permission');
-        resolve('Has Permission');
+        resolve('User has permission');
       } else {
         // user doesn't have permission
-        await console.log('User doesn\'t have permission. Asking for permission...');
-        await this.requestPermission()
-          .then(()=> {
-            resolve();
-          })
-          .catch((err)=>{
-            reject(err);
-          })
+        reject('User doesn\'t have permission');
       }
     })
   }
 
-  static requestPermission() {
+  requestPermission() {
     return new Promise(async (resolve, reject) => {
       try {
         await firebase.messaging().requestPermission();
         // User has authorised
-        console.log('Permission granted');
         resolve('Authorized');
       } catch (error) {
         // User has rejected permissions
-        console.log('Permission denied');
         reject('Denied');
       }
     })
   }
 
-  static getToken() {
+  getToken() {
     return new Promise(async (resolve, reject) => {
       let fcmToken = await AsyncStorage.getItem('fcmToken');
       if (!fcmToken) {
         fcmToken = await firebase.messaging().getToken();
         if (fcmToken) {
           await AsyncStorage.setItem('fcmToken', fcmToken);
+          // TODO: send token to backend
+          console.log("Getting new token...");
           resolve(fcmToken);
         }else{
           reject(false);
         }
       }else {
+        console.log("Token exists in local storage");
         resolve(fcmToken);
       }
     })
   }
 
-  static checkExternalStoragePermission() {
+  checkExternalStoragePermission() {
     return new Promise((resolve, reject) => {
       // Only necessary for Android
       if (Platform.OS === 'android') {
@@ -148,7 +169,7 @@ export default class SetrowPush {
     })
   }
 
-  static sendToBackend(url, headers, body) {
+  sendToBackend(url, headers, body) {
     return new Promise((resolve, reject) => {
       fetch(url, {
         method: 'POST',
@@ -166,7 +187,7 @@ export default class SetrowPush {
     })
   }
 
-  static requestFCMEndpoint(appServerKey, data) {
+  requestFCMEndpoint(appServerKey, data) {
     return new Promise(async (resolve, reject) => {
       let token = await this.getToken();
       let reqBody = {
@@ -185,7 +206,7 @@ export default class SetrowPush {
           subtitle: '',
           click_action: '',
           android_channel_id: 'push',
-          tag: 'SetrowPush',
+          tag: 'WDCPush',
           image: "http://www.three.co.uk/hub/wp-content/uploads/Google-logo-1-resized.jpg",
           ...data
         };
@@ -203,7 +224,7 @@ export default class SetrowPush {
           badge: 0,
           subtitle: '',
           click_action: '',
-          tag: 'SetrowPush',
+          tag: 'WDCPush',
           ...data
         }
       }
@@ -221,7 +242,7 @@ export default class SetrowPush {
     })
   }
 
-  static getDeviceInfo() {
+  getDeviceInfo() {
     return new Promise(async (resolve, reject)=>{
       let infoObject = {
         uniqueId: await DeviceInfo.getUniqueId().then(id => id),
@@ -236,7 +257,7 @@ export default class SetrowPush {
     });
   }
 
-  static onMessageListener() {
+  onMessageListener() {
     return firebase.messaging().onMessage((message: RemoteMessage)=> {
       console.log('Event: onMessage', message);
       this.displayLocalNotification(message, true);
@@ -244,7 +265,7 @@ export default class SetrowPush {
     })
   }
 
-  static onNotificationDisplayedListener() {
+  onNotificationDisplayedListener() {
     return firebase.notifications().onNotificationDisplayed((notification: Notification) => {
       // ANDROID: Remote notifications do not contain the channel ID. You will have to specify this manually if you'd like to re-display the notification.
       console.log('Event: Notification displayed - onNotificationDisplayed', notification);
@@ -253,7 +274,7 @@ export default class SetrowPush {
     });
   }
 
-  static onNotificationListener() {
+  onNotificationListener() {
     return firebase.notifications().onNotification((notification: Notification) => {
       // BURAYI TEST ET==> notification.android.setChannelId('setrow-push').setSound('default');
       console.log('Event: Notification received - onNotification', notification);
@@ -262,42 +283,46 @@ export default class SetrowPush {
     });
   }
 
-  static onNotificationOpenedListener() {
+  onNotificationOpenedListener() {
     return firebase.notifications().onNotificationOpened(async (notificationOpen: NotificationOpen) => {
       const action = notificationOpen.action;
       const notification: Notification = notificationOpen.notification;
 
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      this.callbackFunc(notification.data);
+      this.#callbackFunc(notification.data);
       // TODO: send log to backend
     });
   }
 
-  static onTokenRefreshListener() {
+  onTokenRefreshListener() {
     // The onTokenRefresh callback fires with the latest registration token whenever a new token is generated.
-    return firebase.messaging().onTokenRefresh(fcmToken => {
+    return firebase.messaging().onTokenRefresh(async (fcmToken) => {
+      await AsyncStorage.setItem("fcmToken", fcmToken);
       // TODO: send to backend
     });
   }
 
-  static async checkIfOpenedByNotification() {
-    // To check if the app was opened by a notification being clicked / tapped / opened :
-    const notificationOpen: NotificationOpen = await firebase.notifications().getInitialNotification();
-    if (notificationOpen) {
-      // App was opened by a notification
-      console.log('App is opened because of notification interaction');
-      const action = notificationOpen.action;
-      const notification: Notification = notificationOpen.notification;
-      await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      this.callbackFunc(notification.data);
-      // TODO: send log to backend
-    }else {
-      console.log('Not opened by notification', notificationOpen);
-    }
+  checkIfOpenedByNotification() {
+    return new Promise(async (resolve, reject) => {
+      // To check if the app was opened by a notification being clicked / tapped / opened :
+      const notificationOpen: NotificationOpen = await firebase.notifications().getInitialNotification();
+      if (notificationOpen) {
+        // App was opened by a notification
+        console.log('App is opened because of notification interaction');
+        const action = notificationOpen.action;
+        const notification: Notification = notificationOpen.notification;
+        await firebase.notifications().removeDeliveredNotification(notification._notificationId);
+        this.#callbackFunc(notification.data);
+        // TODO: send log to backend
+      }else {
+        console.log('Not opened by notification', notificationOpen);
+      }
+      resolve();
+    })
   }
 
-  static displayLocalNotification(notification: Notification, dataOnly=false) {
+  displayLocalNotification(notification: Notification, dataOnly=false) {
     this.createAndroidChannel().then(async () => {
       let notID = dataOnly ? notification._messageId : notification._notificationId;
       let title = dataOnly ? notification.data.title : notification.title;
@@ -307,17 +332,24 @@ export default class SetrowPush {
         notificationId: notID,
         title: title,
         body: body,
-        data: notification._data
+        data: notification._data,
+        // collapse_key: notification._collapseKey
       })
-          .setSound(notification.data.sound)
-          // .ios.setLaunchImage('http://www.three.co.uk/hub/wp-content/uploads/Google-logo-1-resized.jpg')
-          .android.setBigPicture(notification.data.image)
-          .android.setChannelId('push')
-          .android.setSmallIcon('ic_notification')
-          .android.setColor('#00FF00')
-          .android.setPriority(firebase.notifications.Android.Priority.Max)
-          .android.setVibrate(1000);
-          // .ios.setBadge(2);
+        .setSound(notification.data.sound)
+        // .ios.setLaunchImage('http://www.three.co.uk/hub/wp-content/uploads/Google-logo-1-resized.jpg')
+        .android.setBigPicture(notification.data.image)
+        .android.setChannelId('push')
+        .android.setSmallIcon('ic_notification')
+        .android.setColor('#00FF00')
+        .android.setPriority(firebase.notifications.Android.Priority.Max)
+        .android.setVibrate(1000);
+        // .ios.setBadge(2);
+
+      // Build an action
+      const action = new firebase.notifications.Android.Action('test_action', 'ic_launcher', 'My Test Action');
+      // Add the action to the notification
+      localNotification.android.addAction(action);
+
       await firebase.notifications().displayNotification(localNotification).then(()=> {
         console.log('Local notification has been displayed');
       }).catch((err)=> {
@@ -325,4 +357,24 @@ export default class SetrowPush {
       });
     });
   }
+
+  unsubscribe() {
+    return new Promise(async (resolve, reject) => {
+      let fcmToken = await AsyncStorage.getItem('fcmToken');
+      firebase.messaging().deleteToken()
+        .then((res) => AsyncStorage.removeItem('fcmToken'))
+        // TODO: send 'delete' request to backend ????
+        .then(res => resolve())
+        .catch(err => reject(err));
+    })
+  }
 }
+
+export let backgroundMessaging = async (message: RemoteMessage) => {
+  // handle your message
+  console.log(message);
+  message._data = message.data;
+  let wdc = await new WDCPush();
+  wdc.displayLocalNotification(message, true);
+  return Promise.resolve();
+};

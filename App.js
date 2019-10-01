@@ -1,24 +1,31 @@
 import React from 'react';
 import { Alert, StyleSheet, Platform, Image, Text, View, Button, ScrollView } from 'react-native';
-import SetrowPush from "./SetrowPush";
+import WDCPush from "./wdc-push";
 
 export default class App extends React.Component {
   constructor() {
     super();
     this.state = {};
+    this.pushService = new WDCPush();
+    this.pushService.init('<APIKEY>', this.dummyCallbackFunction)
+      .then(res => {
+        console.log('Everything is up and running!');
+        this.pushService.setEmail("test@test.com");
+      })
+      .catch(err => console.log('Can\'t initiate the push service.', err))
   }
 
   dummyCallbackFunction (data) {
     console.log('Callback executed.', data);
   }
 
-  async componentDidMount() {
-    await SetrowPush.init('<APIKEY>', "", this.dummyCallbackFunction);
-    this.removeNotificationOpenedListener = SetrowPush.onNotificationOpenedListener();
-    this.removeNotificationDisplayedListener = SetrowPush.onNotificationDisplayedListener();
-    this.removeNotificationListener = SetrowPush.onNotificationListener();
-    this.removeMessageListener = SetrowPush.onMessageListener();
-    this.removeTokenRefreshListener = SetrowPush.onTokenRefreshListener();
+  componentDidMount() {
+    this.pushService.requestPermissionAndGetToken().then(token => console.log(token)).catch(err => console.log(err));
+    this.removeNotificationOpenedListener = this.pushService.onNotificationOpenedListener();
+    this.removeNotificationDisplayedListener = this.pushService.onNotificationDisplayedListener();
+    this.removeNotificationListener = this.pushService.onNotificationListener();
+    this.removeMessageListener = this.pushService.onMessageListener();
+    this.removeTokenRefreshListener = this.pushService.onTokenRefreshListener();
   }
 
   componentWillUnmount() {
@@ -37,8 +44,17 @@ export default class App extends React.Component {
           WDC Push{'\n'} React Native w/ Firebase
         </Text>
         <View style={styles.modules}>
+          <Button title={'Init'} onPress={() => {
+            this.pushService.requestPermissionAndGetToken().then((res) => {
+              Alert.alert('Result', res);
+            }).catch((err) => {
+              Alert.alert('Error', err)
+            })
+          }}/>
+        </View>
+        <View style={styles.modules}>
           <Button title={'Check Permission'} onPress={() => {
-            SetrowPush.checkPermission().then((res) => {
+            this.pushService.checkPermission().then((res) => {
               Alert.alert('Permission Status', res);
             }).catch((err) => {
               Alert.alert('Permission Status', err)
@@ -47,7 +63,7 @@ export default class App extends React.Component {
         </View>
         <View style={styles.modules}>
           <Button title={'Request Permission'} onPress={() => {
-            SetrowPush.requestPermission().then((res) => {
+            this.pushService.requestPermission().then((res) => {
               Alert.alert('Permission Request', res);
             }).catch((err) => {
               Alert.alert('Permission Request', err)
@@ -56,7 +72,7 @@ export default class App extends React.Component {
         </View>
         <View style={styles.modules}>
           <Button title={'Get Token'} onPress={() => {
-            SetrowPush.getToken().then((token) => {
+            this.pushService.getToken().then((token) => {
               console.log(token);
               Alert.alert('Token', token);
             }).catch((err) => {
@@ -66,7 +82,7 @@ export default class App extends React.Component {
         </View>
         <View style={styles.modules}>
           <Button title={'External Storage Access'} onPress={() => {
-            SetrowPush.checkExternalStoragePermission().then((res) => {
+            this.pushService.checkExternalStoragePermission().then((res) => {
               Alert.alert('Permission Request', res);
             }).catch((err) => {
               Alert.alert('Permission Request', err)
@@ -75,7 +91,7 @@ export default class App extends React.Component {
         </View>
         <View style={styles.modules}>
           <Button title={'Device Info'} onPress={() => {
-            SetrowPush.getDeviceInfo().then((res) => {
+            this.pushService.getDeviceInfo().then((res) => {
               Alert.alert('Device Info', JSON.stringify(res));
             }).catch((err) => {
               Alert.alert('Error', err)
@@ -83,8 +99,17 @@ export default class App extends React.Component {
           }}/>
         </View>
         <View style={styles.modules}>
+          <Button title={'Unsubscribe'} onPress={() => {
+            this.pushService.unsubscribe().then((res) => {
+              console.log("Unsubscribed")
+            }).catch((err) => {
+              console.log("Error when unsubscribing")
+            })
+          }}/>
+        </View>
+        <View style={styles.modules}>
           <Button title={'Send Remote Push'} onPress={() => {
-            SetrowPush.requestFCMEndpoint('AAAAQ16OIbY:APA91bEg4Ee8OCeLVmx7BKhaKet1SjFyBvgGFvWl15MDykF_ezEbQifYtxamChytUdsqEi_maaz4GWt7LElPyTU2DERpj1AB1xtOycIoLw1-4DGk3ijSJI5BezrrsNDEB1Hi8w-eKM3U')
+            this.pushService.requestFCMEndpoint('AAAAQ16OIbY:APA91bEg4Ee8OCeLVmx7BKhaKet1SjFyBvgGFvWl15MDykF_ezEbQifYtxamChytUdsqEi_maaz4GWt7LElPyTU2DERpj1AB1xtOycIoLw1-4DGk3ijSJI5BezrrsNDEB1Hi8w-eKM3U')
               .then((res) => {
                 console.log('Fetch result: ', res);
               })
@@ -116,7 +141,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   modules: {
-    margin: 20,
+    margin: 10,
   },
   modulesHeader: {
     fontSize: 16,
