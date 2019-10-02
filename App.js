@@ -7,10 +7,11 @@ export default class App extends React.Component {
     super();
     this.state = {};
     this.pushService = new WDCPush();
-    this.pushService.init('<APIKEY>', this.dummyCallbackFunction)
+    this.pushService.init('<APIKEY>', '', this.dummyCallbackFunction)
       .then(res => {
         console.log('Everything is up and running!');
-        this.pushService.setEmail("test@test.com");
+        // this.pushService.setEmail("test@test.com");
+        // this.pushService.setCallback(this.dummyCallbackFunction)
       })
       .catch(err => console.log('Can\'t initiate the push service.', err))
   }

@@ -8,9 +8,9 @@ export default class WDCPush {
     newToken: "newToken",
     refreshToken: "refreshToken"
   };
-  #key;
+  #apiKey;
   #userEmail;
-  #callbackFunc = () => {};
+  #callbackAfterTap = () => {};
 
   constructor() {
 
@@ -18,13 +18,14 @@ export default class WDCPush {
 
   /**
    * Initiates the Push Notificaiton Service
-   * @param key {string} WDC key
-   * @param [callbackToRegister] {function} Callback function to call on notificationClick events. With this callback, you can access the custom key-value pairs that you specified in the notification body.
+   * @param apiKey {string} WDC API Key
+   * @param [userEmail] {string=""} Device user's email
+   * @param [callbackToRegister] {function} Callback function to call on notification-tapping events. With this callback, you can access the custom key-value pairs that you specified in the notification body.
    * @returns {Promise<R>}
    */
-  init(key, callbackToRegister) {
+  init(apiKey, userEmail='', callbackToRegister) {
     return new Promise((resolve, reject) => {
-      this.checkParams(key, callbackToRegister)
+      this.checkParams(apiKey, userEmail, callbackToRegister)
         .then(() => this.checkIfOpenedByNotification())
         .then(() => this.createAndroidChannel(true))
         .then(res => resolve(res))
@@ -44,7 +45,7 @@ export default class WDCPush {
   setCallback(callback) {
     return new Promise((resolve, reject) => {
       if(typeof callback !== "function") reject('Callback must be a function');
-      this.#callbackFunc = callback;
+      this.#callbackAfterTap = callback;
       resolve();
     })
   }
@@ -54,11 +55,13 @@ export default class WDCPush {
     return re.test(String(email).toLowerCase());
   }
 
-  checkParams(key, callback) {
+  checkParams(key, email, callback) {
     return new Promise((resolve, reject) => {
       if (typeof key !== "string") reject('Key must be string');
-      this.#key = key;
-      if(typeof callback === 'function') this.#callbackFunc = callback;
+      if (typeof email !== 'string' || (email.length > 0 && !this.validateEmail(email)) ) reject('Email must be valid');
+      this.#apiKey = key;
+      this.#userEmail = email;
+      if(typeof callback === 'function') this.#callbackAfterTap = callback;
       resolve();
     })
   };
@@ -290,7 +293,7 @@ export default class WDCPush {
 
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      this.#callbackFunc(notification.data);
+      this.#callbackAfterTap(notification.data);
       // TODO: send log to backend
     });
   }
@@ -313,7 +316,7 @@ export default class WDCPush {
         const action = notificationOpen.action;
         const notification: Notification = notificationOpen.notification;
         await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-        this.#callbackFunc(notification.data);
+        this.#callbackAfterTap(notification.data);
         // TODO: send log to backend
       }else {
         console.log('Not opened by notification', notificationOpen);
