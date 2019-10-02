@@ -134,8 +134,17 @@ export default class WDCPush {
       if (!fcmToken) {
         fcmToken = await firebase.messaging().getToken();
         if (fcmToken) {
+          // New Token Generated
           await AsyncStorage.setItem('fcmToken', fcmToken);
-          // TODO: send token to backend
+          await this.getDeviceInfo().then((deviceInfo) => {
+            let reqBody = {
+              apiKey: this.#apiKey,
+              email : this.#userEmail,
+              fcmToken: fcmToken,
+              ...deviceInfo
+            };
+            this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/register.php", {}, reqBody).then(res => console.log(res));
+          });
           console.log("Getting new token...");
           resolve(fcmToken);
         }else{
@@ -248,14 +257,15 @@ export default class WDCPush {
   getDeviceInfo() {
     return new Promise(async (resolve, reject)=>{
       let infoObject = {
-        uniqueId: await DeviceInfo.getUniqueId().then(id => id),
-        brand: await  DeviceInfo.getBrand().then(brand=>brand),
-        model: await DeviceInfo.getModel().then(model => model),
+        deviceOs: Platform.OS,
+        deviceUniqueId: await DeviceInfo.getUniqueId().then(id => id),
+        deviceBrand: await  DeviceInfo.getBrand().then(brand=>brand),
+        deviceModel: await DeviceInfo.getModel().then(model => model),
         deviceId: await DeviceInfo.getDeviceId().then(id => id),
-        //product: await DeviceInfo.getProduct().then(product => product),
-        osVersion: await DeviceInfo.getSystemVersion().then(version=>version)
+        deviceOsVersion: await DeviceInfo.getSystemVersion().then(version=>version)
+        //Product: await DeviceInfo.getProduct().then(product => product),
       };
-      console.log(infoObject);
+      //console.log(infoObject);
       resolve(infoObject);
     });
   }
