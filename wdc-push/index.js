@@ -181,10 +181,10 @@ export default class WDCPush {
     })
   }
 
-  sendToBackend(url, headers, body) {
+  sendToBackend(url, headers, body, method='POST') {
     return new Promise((resolve, reject) => {
       fetch(url, {
-        method: 'POST',
+        method: method,
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -373,11 +373,20 @@ export default class WDCPush {
 
   unsubscribe() {
     return new Promise(async (resolve, reject) => {
-      let fcmToken = await AsyncStorage.getItem('fcmToken');
+      let fcmTokenToDelete = await AsyncStorage.getItem('fcmToken');
       firebase.messaging().deleteToken()
         .then((res) => AsyncStorage.removeItem('fcmToken'))
-        // TODO: send 'delete' request to backend ????
-        .then(res => resolve())
+        .then(() => {
+          let reqBody = {
+            apiKey: this.#apiKey,
+            fcmToken: fcmTokenToDelete
+          };
+          return this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
+        })
+        .then((res) => {
+          console.log(res);
+          resolve();
+        })
         .catch(err => reject(err));
     })
   }

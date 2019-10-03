@@ -93,6 +93,7 @@ export default class App extends React.Component {
         <View style={styles.modules}>
           <Button title={'Device Info'} onPress={() => {
             this.pushService.getDeviceInfo().then((res) => {
+              console.log(res);
               Alert.alert('Device Info', JSON.stringify(res));
             }).catch((err) => {
               Alert.alert('Error', err)
