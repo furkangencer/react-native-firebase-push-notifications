@@ -28,6 +28,7 @@ export default class WDCPush {
       this.checkParams(apiKey, userEmail, callbackToRegister)
         .then(() => this.checkIfOpenedByNotification())
         .then(() => this.createAndroidChannel(true))
+        // TODO: "Uygulamayı açtı" log'u (saat verisiyle) backend'e gelmeli
         .then(res => resolve(res))
         .catch(err => reject(err))
     })
@@ -310,9 +311,18 @@ export default class WDCPush {
 
   onTokenRefreshListener() {
     // The onTokenRefresh callback fires with the latest registration token whenever a new token is generated.
-    return firebase.messaging().onTokenRefresh(async (fcmToken) => {
-      await AsyncStorage.setItem("fcmToken", fcmToken);
-      // TODO: send to backend
+    return firebase.messaging().onTokenRefresh(async (newFcmToken) => {
+      let oldFcmToken = await AsyncStorage.getItem("fcmToken");
+      await AsyncStorage.setItem("fcmToken", newFcmToken);
+      await this.getDeviceInfo().then((deviceInfo) => {
+        let reqBody = {
+          apiKey: this.#apiKey,
+          oldFcmToken: oldFcmToken,
+          newFcmToken: newFcmToken,
+          ...deviceInfo
+        };
+        this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/update.php", {}, reqBody,'PATCH')
+      });
     });
   }
 
