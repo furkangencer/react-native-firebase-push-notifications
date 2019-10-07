@@ -1,35 +1,33 @@
-import { PermissionsAndroid, Platform, AsyncStorage } from 'react-native';
+import { PermissionsAndroid, Platform, AsyncStorage, Linking } from 'react-native';
 import firebase from 'react-native-firebase';
 import type { Notification, NotificationOpen, RemoteMessage } from 'react-native-firebase';
 import DeviceInfo from 'react-native-device-info';
 
-export default class WDCPush {
-  #LOG_TYPES = {
-    newToken: "newToken",
-    refreshToken: "refreshToken"
+class WDCPush {
+  #config = {
+    apiKey: "",
+    userEmail: "",
+    callbackAfterTap: function () { }
   };
-  #apiKey;
-  #userEmail;
-  #callbackAfterTap = () => {};
-
-  constructor() {
-
-  }
+  #tokenRefreshListener = null;
+  #messageListener = null;
+  #notificationDisplayedListener = null;
+  #notificationListener = null;
+  #notificationOpenedListener = null;
 
   /**
-   * Initiates the Push Notificaiton Service
-   * @param apiKey {string} WDC API Key
-   * @param [userEmail] {string=""} Device user's email
-   * @param [callbackToRegister] {function} Callback function to call on notification-tapping events. With this callback, you can access the custom key-value pairs that you specified in the notification body.
+   * Initiates the Push Notificatiton Service
+   * @param config {object} Config object
    * @returns {Promise<R>}
    */
-  init(apiKey, userEmail='', callbackToRegister) {
+  init(config={}) {
     return new Promise((resolve, reject) => {
-      this.checkParams(apiKey, userEmail, callbackToRegister)
+      this.checkParams(config)
         .then(() => this.checkIfOpenedByNotification())
         .then(() => this.createAndroidChannel(true))
         // TODO: "Uygulamayı açtı" log'u (saat verisiyle) backend'e gelmeli
-        .then(res => resolve(res))
+        .then(() => this.createListeners())
+        .then(() => resolve())
         .catch(err => reject(err))
     })
   }
@@ -38,7 +36,8 @@ export default class WDCPush {
     return new Promise((resolve, reject) => {
       if (typeof email !== 'string' || (email.length > 0 && !this.validateEmail(email)) ) reject('Email must be valid');
       //TODO: local'e yaz: await this.storeEmail(email);
-      this.#userEmail = email;
+      // TODO: Aynı zamanda backend'e gönder. apiKey, email, deviceUniqueId
+      this.#config.userEmail = email;
       resolve();
     });
   }
@@ -46,7 +45,7 @@ export default class WDCPush {
   setCallback(callback) {
     return new Promise((resolve, reject) => {
       if(typeof callback !== "function") reject('Callback must be a function');
-      this.#callbackAfterTap = callback;
+      this.#config.callbackAfterTap = callback;
       resolve();
     })
   }
@@ -56,13 +55,12 @@ export default class WDCPush {
     return re.test(String(email).toLowerCase());
   }
 
-  checkParams(key, email, callback) {
+  checkParams(config) {
     return new Promise((resolve, reject) => {
-      if (typeof key !== "string") reject('Key must be string');
-      if (typeof email !== 'string' || (email.length > 0 && !this.validateEmail(email)) ) reject('Email must be valid');
-      this.#apiKey = key;
-      this.#userEmail = email;
-      if(typeof callback === 'function') this.#callbackAfterTap = callback;
+      this.#config = { ...this.#config, ...config};
+      if (typeof this.#config.apiKey !== "string") reject('Key must be string');
+      if (typeof this.#config.userEmail !== 'string' || (this.#config.userEmail.length > 0 && !this.validateEmail(this.#config.userEmail)) ) reject('Email must be valid');
+      if (typeof this.#config.callbackAfterTap !== 'function') reject('Callback must be function');
       resolve();
     })
   };
@@ -118,14 +116,15 @@ export default class WDCPush {
 
   requestPermission() {
     return new Promise(async (resolve, reject) => {
-      try {
-        await firebase.messaging().requestPermission();
-        // User has authorised
-        resolve('Authorized');
-      } catch (error) {
-        // User has rejected permissions
-        reject('Denied');
-      }
+      firebase.messaging().requestPermission()
+        .then(async () => {
+          // User has authorised
+          resolve('Authorized');
+        })
+        .catch(async (err) => {
+          // User has rejected permissions
+          reject('Denied');
+        })
     })
   }
 
@@ -139,8 +138,8 @@ export default class WDCPush {
           await AsyncStorage.setItem('fcmToken', fcmToken);
           await this.getDeviceInfo().then((deviceInfo) => {
             let reqBody = {
-              apiKey: this.#apiKey,
-              email : this.#userEmail,
+              apiKey: this.#config.apiKey,
+              email : this.#config.userEmail,
               fcmToken: fcmToken,
               ...deviceInfo
             };
@@ -304,7 +303,7 @@ export default class WDCPush {
 
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-      this.#callbackAfterTap(notification.data);
+      this.#config.callbackAfterTap(notification.data);
       // TODO: send log to backend
     });
   }
@@ -316,7 +315,7 @@ export default class WDCPush {
       await AsyncStorage.setItem("fcmToken", newFcmToken);
       await this.getDeviceInfo().then((deviceInfo) => {
         let reqBody = {
-          apiKey: this.#apiKey,
+          apiKey: this.#config.apiKey,
           oldFcmToken: oldFcmToken,
           newFcmToken: newFcmToken,
           ...deviceInfo
@@ -336,7 +335,7 @@ export default class WDCPush {
         const action = notificationOpen.action;
         const notification: Notification = notificationOpen.notification;
         await firebase.notifications().removeDeliveredNotification(notification._notificationId);
-        this.#callbackAfterTap(notification.data);
+        this.#config.callbackAfterTap(notification.data);
         // TODO: send log to backend
       }else {
         console.log('Not opened by notification', notificationOpen);
@@ -359,7 +358,6 @@ export default class WDCPush {
         // collapse_key: notification._collapseKey
       })
         .setSound(notification.data.sound)
-        // .ios.setLaunchImage('http://www.three.co.uk/hub/wp-content/uploads/Google-logo-1-resized.jpg')
         .android.setBigPicture(notification.data.image)
         .android.setChannelId('push')
         .android.setSmallIcon('ic_notification')
@@ -368,10 +366,11 @@ export default class WDCPush {
         .android.setVibrate(1000);
         // .ios.setBadge(2);
 
+      // TODO: Add action buttons (Android)
       // Build an action
-      const action = new firebase.notifications.Android.Action('test_action', 'ic_launcher', 'My Test Action');
+      // const action = new firebase.notifications.Android.Action('test_action', 'ic_launcher', 'My Test Action');
       // Add the action to the notification
-      localNotification.android.addAction(action);
+      // localNotification.android.addAction(action);
 
       await firebase.notifications().displayNotification(localNotification).then(()=> {
         console.log('Local notification has been displayed');
@@ -384,11 +383,10 @@ export default class WDCPush {
   unsubscribe() {
     return new Promise(async (resolve, reject) => {
       let fcmTokenToDelete = await AsyncStorage.getItem('fcmToken');
-      firebase.messaging().deleteToken()
-        .then((res) => AsyncStorage.removeItem('fcmToken'))
+      await AsyncStorage.removeItem('fcmToken')
         .then(() => {
           let reqBody = {
-            apiKey: this.#apiKey,
+            apiKey: this.#config.apiKey,
             fcmToken: fcmTokenToDelete
           };
           return this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
@@ -400,7 +398,25 @@ export default class WDCPush {
         .catch(err => reject(err));
     })
   }
+
+  async goToSettings() {
+    if(Platform.OS === 'ios') {
+      const appUrl = 'app-settings://notification/com.rnpush';
+      await Linking.openURL(appUrl);
+    }
+  }
+
+  createListeners() {
+    this.#notificationOpenedListener = this.onNotificationOpenedListener();
+    this.#notificationDisplayedListener = this.onNotificationDisplayedListener();
+    this.#notificationListener = this.onNotificationListener();
+    this.#messageListener = this.onMessageListener();
+    this.#tokenRefreshListener = this.onTokenRefreshListener();
+  }
 }
+
+const wdcPush = new WDCPush();
+export default wdcPush;
 
 export let backgroundMessaging = async (message: RemoteMessage) => {
   // handle your message
