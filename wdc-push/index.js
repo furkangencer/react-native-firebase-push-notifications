@@ -130,6 +130,7 @@ class WDCPush {
 
   getToken() {
     return new Promise(async (resolve, reject) => {
+      await AsyncStorage.setItem('isUnsubscribed', 'false');
       let fcmToken = await AsyncStorage.getItem('fcmToken');
       if (!fcmToken) {
         fcmToken = await firebase.messaging().getToken();
@@ -311,17 +312,22 @@ class WDCPush {
   onTokenRefreshListener() {
     // The onTokenRefresh callback fires with the latest registration token whenever a new token is generated.
     return firebase.messaging().onTokenRefresh(async (newFcmToken) => {
-      let oldFcmToken = await AsyncStorage.getItem("fcmToken");
-      await AsyncStorage.setItem("fcmToken", newFcmToken);
-      await this.getDeviceInfo().then((deviceInfo) => {
-        let reqBody = {
-          apiKey: this.#config.apiKey,
-          oldFcmToken: oldFcmToken,
-          newFcmToken: newFcmToken,
-          ...deviceInfo
-        };
-        this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/update.php", {}, reqBody,'PATCH')
-      });
+      let isUnsubscribed = await AsyncStorage.getItem('isUnsubscribed');
+      if(isUnsubscribed === 'false') {
+        let oldFcmToken = await AsyncStorage.getItem("fcmToken");
+        if (oldFcmToken !== newFcmToken) {
+          await AsyncStorage.setItem("fcmToken", newFcmToken);
+          await this.getDeviceInfo().then((deviceInfo) => {
+            let reqBody = {
+              apiKey: this.#config.apiKey,
+              oldFcmToken: oldFcmToken,
+              newFcmToken: newFcmToken,
+              ...deviceInfo
+            };
+            this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/update.php", {}, reqBody,'PATCH')
+          });
+        }
+      }
     });
   }
 
@@ -383,7 +389,9 @@ class WDCPush {
   unsubscribe() {
     return new Promise(async (resolve, reject) => {
       let fcmTokenToDelete = await AsyncStorage.getItem('fcmToken');
-      await AsyncStorage.removeItem('fcmToken')
+      firebase.messaging().deleteToken()
+        .then(()=> AsyncStorage.removeItem('fcmToken'))
+        .then(()=> AsyncStorage.setItem('isUnsubscribed', 'true'))
         .then(() => {
           let reqBody = {
             apiKey: this.#config.apiKey,
