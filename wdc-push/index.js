@@ -130,7 +130,7 @@ class WDCPush {
 
   getToken() {
     return new Promise(async (resolve, reject) => {
-      await AsyncStorage.setItem('isUnsubscribed', 'false');
+      await AsyncStorage.setItem('isSubscribed', 'true');
       let fcmToken = await AsyncStorage.getItem('fcmToken');
       if (!fcmToken) {
         fcmToken = await firebase.messaging().getToken();
@@ -312,8 +312,8 @@ class WDCPush {
   onTokenRefreshListener() {
     // The onTokenRefresh callback fires with the latest registration token whenever a new token is generated.
     return firebase.messaging().onTokenRefresh(async (newFcmToken) => {
-      let isUnsubscribed = await AsyncStorage.getItem('isUnsubscribed');
-      if(isUnsubscribed === 'false') {
+      let isSubscribed = await AsyncStorage.getItem('isSubscribed');
+      if(isSubscribed === 'true') {
         let oldFcmToken = await AsyncStorage.getItem("fcmToken");
         if (oldFcmToken !== newFcmToken) {
           await AsyncStorage.setItem("fcmToken", newFcmToken);
@@ -390,14 +390,18 @@ class WDCPush {
     return new Promise(async (resolve, reject) => {
       let fcmTokenToDelete = await AsyncStorage.getItem('fcmToken');
       firebase.messaging().deleteToken()
-        .then(()=> AsyncStorage.removeItem('fcmToken'))
-        .then(()=> AsyncStorage.setItem('isUnsubscribed', 'true'))
+        .then(() => AsyncStorage.removeItem('fcmToken'))
+        .then(() => AsyncStorage.setItem('isSubscribed', 'false'))
         .then(() => {
-          let reqBody = {
-            apiKey: this.#config.apiKey,
-            fcmToken: fcmTokenToDelete
-          };
-          return this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
+          if(typeof fcmTokenToDelete === "string" && fcmTokenToDelete.length > 0) {
+            let reqBody = {
+              apiKey: this.#config.apiKey,
+              fcmToken: fcmTokenToDelete
+            };
+            return this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
+          }else {
+            return 'fcmToken not found in local storage when unsubscribing';
+          }
         })
         .then((res) => {
           console.log(res);
@@ -405,6 +409,10 @@ class WDCPush {
         })
         .catch(err => reject(err));
     })
+  }
+
+  async checkIfSubscribed() {
+    return await AsyncStorage.getItem('isSubscribed') === 'true';
   }
 
   async goToSettings() {

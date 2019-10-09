@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
-import {Alert, StyleSheet, Platform, Image, Text, View, Button, ScrollView, AsyncStorage} from 'react-native';
+import React, { useEffect , useState} from 'react';
+import {Alert, StyleSheet, Platform, Image, Text, View, Button, Switch, AsyncStorage} from 'react-native';
 import PushService from "./wdc-push";
 
 export default App = () => {
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
   useEffect(() => {
     PushService.init({
       apiKey: 'zx5v6DMOJSsR711HSmqsWmnWBteZ1a2pwXLvrn906rI3jAA1MR',
@@ -11,9 +13,10 @@ export default App = () => {
         console.log('Callback executed.', data);
       }
     })
-      .then(res => {
+      .then(async (res) => {
         console.log('Everything is up and running!');
-        PushService.requestPermissionAndGetToken().then(token => console.log(token)).catch(err => console.log(err));
+        setIsSubscribed(await PushService.checkIfSubscribed());
+        // PushService.requestPermissionAndGetToken().then(token => console.log(token)).catch(err => console.log(err));
         // PushService.setEmail("test@test.com");
         // PushService.setCallback(this.dummyCallbackFunction)
       })
@@ -27,7 +30,7 @@ export default App = () => {
       alignItems: 'center',
       backgroundColor: '#F5FCFF'
     },
-    welcome: {
+    mainText: {
       fontSize: 20,
       textAlign: 'center',
       margin: 10,
@@ -39,17 +42,35 @@ export default App = () => {
 
   return (
     <View style={styles.container}>
-      <Image source={require('./assets/wdc.png')}/>
-      <Text style={styles.welcome}>WDC Push{'\n'} React Native w/ Firebase</Text>
+      <Text style={styles.mainText}>WDC Push{'\n'} React Native w/ Firebase</Text>
       <View style={styles.modules}>
-        <Button title={'Init'} onPress={() => {
+        <Switch onValueChange = {(newValue) => {
+          if(newValue) {
+            PushService.requestPermissionAndGetToken().then((res) => {
+              Alert.alert('Result', res);
+            }).catch((err) => {
+              Alert.alert('Error', err)
+            })
+          }else {
+            PushService.unsubscribe().then((res) => {
+              console.log("Unsubscribed")
+            }).catch((err) => {
+              console.log("Error when unsubscribing")
+            })
+          }
+          setIsSubscribed(newValue);
+        }} value = {isSubscribed}/>
+      </View>
+      {/*<View style={styles.modules}>
+        <Button title={'Request Perm. and Get Token'} onPress={() => {
           PushService.requestPermissionAndGetToken().then((res) => {
+            setIsSubscribed(true);
             Alert.alert('Result', res);
           }).catch((err) => {
             Alert.alert('Error', err)
           })
         }}/>
-      </View>
+      </View>*/}
       <View style={styles.modules}>
         <Button title={'Check Permission'} onPress={() => {
           PushService.checkPermission().then((res) => {
@@ -71,6 +92,7 @@ export default App = () => {
       <View style={styles.modules}>
         <Button title={'Get Token'} onPress={() => {
           PushService.getToken().then((token) => {
+            setIsSubscribed(true);
             console.log(token);
             Alert.alert('Token', token);
           }).catch((err) => {
@@ -88,19 +110,21 @@ export default App = () => {
           })
         }}/>
       </View>
-      <View style={styles.modules}>
+      {/*<View style={styles.modules}>
         <Button title={'Unsubscribe'} onPress={() => {
           PushService.unsubscribe().then((res) => {
+            setIsSubscribed(false);
             console.log("Unsubscribed")
           }).catch((err) => {
             console.log("Error when unsubscribing")
           })
         }}/>
-      </View>
+      </View>*/}
       <View style={styles.modules}>
         <Button title={'Send Remote Push'} onPress={() => {
           PushService.requestFCMEndpoint('AAAAQ16OIbY:APA91bEg4Ee8OCeLVmx7BKhaKet1SjFyBvgGFvWl15MDykF_ezEbQifYtxamChytUdsqEi_maaz4GWt7LElPyTU2DERpj1AB1xtOycIoLw1-4DGk3ijSJI5BezrrsNDEB1Hi8w-eKM3U')
             .then((res) => {
+              setIsSubscribed(true);
               console.log('Fetch result: ', res);
             })
             .catch((err) => {
