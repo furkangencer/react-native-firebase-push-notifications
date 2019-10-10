@@ -16,7 +16,7 @@ class WDCPush {
   #notificationOpenedListener = null;
 
   /**
-   * Initiates the Push Notificatiton Service
+   * Initiates the Push Notification Service
    * @param config {object} Config object
    * @returns {Promise<R>}
    */
@@ -25,7 +25,6 @@ class WDCPush {
       this.checkParams(config)
         .then(() => this.checkIfOpenedByNotification())
         .then(() => this.createAndroidChannel(true))
-        // TODO: "Uygulamayı açtı" log'u (saat verisiyle) backend'e gelmeli
         .then(() => this.createListeners())
         .then(() => resolve())
         .catch(err => reject(err))
@@ -35,10 +34,11 @@ class WDCPush {
   setEmail(email) {
     return new Promise((resolve, reject) => {
       if (typeof email !== 'string' || (email.length > 0 && !this.validateEmail(email)) ) reject('Email must be valid');
-      //TODO: local'e yaz: await this.storeEmail(email);
-      // TODO: Aynı zamanda backend'e gönder. apiKey, email, deviceUniqueId
+      // TODO: Backend'e gönder. apiKey, email, deviceUniqueId
       this.#config.userEmail = email;
-      resolve();
+      AsyncStorage.setItem('config', JSON.stringify(this.#config))
+        .then(res => resolve(res))
+        .catch(err => reject(err));
     });
   }
 
@@ -56,12 +56,14 @@ class WDCPush {
   }
 
   checkParams(config) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       this.#config = { ...this.#config, ...config};
       if (typeof this.#config.apiKey !== "string") reject('Key must be string');
       if (typeof this.#config.userEmail !== 'string' || (this.#config.userEmail.length > 0 && !this.validateEmail(this.#config.userEmail)) ) reject('Email must be valid');
       if (typeof this.#config.callbackAfterTap !== 'function') reject('Callback must be function');
-      resolve();
+      AsyncStorage.setItem('config', JSON.stringify(this.#config)) // config's "callbackAfterTap" property gets discarded automatically when stringifying
+        .then(res => resolve(res))
+        .catch(err => reject(err));
     })
   };
 
@@ -95,7 +97,6 @@ class WDCPush {
     return new Promise((resolve, reject) => {
       this.requestPermission().then(async (res) => {
         let token = await this.getToken();
-        // TODO: Android'de izin penceresi olmadığı için local'e yaz ???
         resolve(token)
       }).catch(err => reject(err));
     })
@@ -275,16 +276,17 @@ class WDCPush {
     return firebase.messaging().onMessage((message: RemoteMessage)=> {
       console.log('Event: onMessage', message);
       this.displayLocalNotification(message, true);
-      // TODO: send log to backend
     })
   }
 
   onNotificationDisplayedListener() {
-    return firebase.notifications().onNotificationDisplayed((notification: Notification) => {
+    return firebase.notifications().onNotificationDisplayed(async (notification: Notification) => {
       // ANDROID: Remote notifications do not contain the channel ID. You will have to specify this manually if you'd like to re-display the notification.
       console.log('Event: Notification displayed - onNotificationDisplayed', notification);
       // this.displayLocalNotification(notification); // Android'de sonsuz döngüye sokuyor
-      // TODO: send log to backend (ios açılma bilgisi => ios'ta app background ve foreground'dayken push gelince bu event fırlıyor )
+      if (Platform.OS === 'ios') {
+        this.sendLog('display', notification);
+      }
     });
   }
 
@@ -293,7 +295,6 @@ class WDCPush {
       // BURAYI TEST ET==> notification.android.setChannelId('setrow-push').setSound('default');
       console.log('Event: Notification received - onNotification', notification);
       this.displayLocalNotification(notification);
-      // TODO: send log to backend (for only android)
     });
   }
 
@@ -305,7 +306,7 @@ class WDCPush {
       console.log('Event: Notification opened - onNotificationOpened');
       await firebase.notifications().removeDeliveredNotification(notification._notificationId);
       this.#config.callbackAfterTap(notification.data);
-      // TODO: send log to backend
+      this.sendLog('tap', notification);
     });
   }
 
@@ -342,7 +343,7 @@ class WDCPush {
         const notification: Notification = notificationOpen.notification;
         await firebase.notifications().removeDeliveredNotification(notification._notificationId);
         this.#config.callbackAfterTap(notification.data);
-        // TODO: send log to backend
+        this.sendLog('tap', notification);
       }else {
         console.log('Not opened by notification', notificationOpen);
       }
@@ -370,7 +371,7 @@ class WDCPush {
         .android.setColor('#00FF00')
         .android.setPriority(firebase.notifications.Android.Priority.Max)
         .android.setVibrate(1000);
-        // .ios.setBadge(2);
+      // .ios.setBadge(2);
 
       // TODO: Add action buttons (Android)
       // Build an action
@@ -378,7 +379,10 @@ class WDCPush {
       // Add the action to the notification
       // localNotification.android.addAction(action);
 
-      await firebase.notifications().displayNotification(localNotification).then(()=> {
+      await firebase.notifications().displayNotification(localNotification).then(async ()=> {
+        if (Platform.OS === 'android') {
+          this.sendLog('display', notification);
+        }
         console.log('Local notification has been displayed');
       }).catch((err)=> {
         console.log(err);
@@ -430,6 +434,24 @@ class WDCPush {
     await firebase.messaging().unsubscribeFromTopic(topicName);
   }
 
+  async sendLog(eventType, notification) {
+    let sendId = (typeof notification._data.sendId !== 'undefined' ? notification._data.sendId : 0);
+    let tag = (typeof notification.data.tag !== 'undefined' ? notification.data.tag : "");
+    let localConfig = JSON.parse(await AsyncStorage.getItem('config'));
+    let locaFcmToken = await AsyncStorage.getItem('fcmToken');
+    let reqBody = {
+      apiKey: localConfig.apiKey,
+      fcmToken: locaFcmToken,
+      event: eventType,
+      displayedAt: Math.floor(Date.now() / 1000),
+      tappedAt: Math.floor(Date.now() / 1000),
+      sendId: sendId,
+      tag: tag
+    };
+    console.log("Log body:", reqBody);
+    this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/log.php", {}, reqBody).then(res => console.log(res));
+  }
+
   createListeners() {
     this.#notificationOpenedListener = this.onNotificationOpenedListener();
     this.#notificationDisplayedListener = this.onNotificationDisplayedListener();
@@ -446,7 +468,6 @@ export let backgroundMessaging = async (message: RemoteMessage) => {
   // handle your message
   console.log(message);
   message._data = message.data;
-  let wdc = await new WDCPush();
-  wdc.displayLocalNotification(message, true);
+  wdcPush.displayLocalNotification(message, true);
   return Promise.resolve();
 };
