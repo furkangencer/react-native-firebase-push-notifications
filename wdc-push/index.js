@@ -422,6 +422,14 @@ class WDCPush {
     }
   }
 
+  async subscribeToTopic(topicName='') {
+    await firebase.messaging().subscribeToTopic(topicName);
+  }
+
+  async unsubscribeFromTopic(topicName='') {
+    await firebase.messaging().unsubscribeFromTopic(topicName);
+  }
+
   createListeners() {
     this.#notificationOpenedListener = this.onNotificationOpenedListener();
     this.#notificationDisplayedListener = this.onNotificationDisplayedListener();
