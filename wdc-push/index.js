@@ -232,8 +232,7 @@ class WDCPush {
         reqBody.data = {
           some_key: 'some value',
           sound: 'default',
-          tag: 'WDCPush',
-          sendId: 1
+          tag: 'WDCPush'
         };
         reqBody.notification = {
           title: 'Notification testing (title)',
