@@ -9,6 +9,7 @@ export default App = () => {
     PushService.init({
       apiKey: 'zx5v6DMOJSsR711HSmqsWmnWBteZ1a2pwXLvrn906rI3jAA1MR',
       userEmail: '',
+      bundleId: 'com.rnpush',
       callbackAfterTap: function (data) {
         console.log('Callback executed.', data);
       }
@@ -151,7 +152,7 @@ export default App = () => {
       </View>
       <View style={styles.modules}>
         <Button title={'Open Settings (IOS)'} onPress={async () => {
-          await PushService.goToSettings();
+          await PushService.goToNotificationSettings();
         }}/>
       </View>
     </View>

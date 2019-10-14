@@ -7,6 +7,7 @@ class WDCPush {
   #config = {
     apiKey: "",
     userEmail: "",
+    bundleId: "",
     callbackAfterTap: function () { }
   };
   #tokenRefreshListener = null;
@@ -34,7 +35,7 @@ class WDCPush {
   setEmail(email) {
     return new Promise((resolve, reject) => {
       if (typeof email !== 'string' || (email.length > 0 && !this.validateEmail(email)) ) reject('Email must be valid');
-      // TODO: Backend'e gönder. apiKey, email, deviceUniqueId
+      // TODO: sendRequest => apiKey, email, deviceUniqueId
       this.#config.userEmail = email;
       AsyncStorage.setItem('config', JSON.stringify(this.#config))
         .then(res => resolve(res))
@@ -60,6 +61,7 @@ class WDCPush {
       this.#config = { ...this.#config, ...config};
       if (typeof this.#config.apiKey !== "string") reject('Key must be string');
       if (typeof this.#config.userEmail !== 'string' || (this.#config.userEmail.length > 0 && !this.validateEmail(this.#config.userEmail)) ) reject('Email must be valid');
+      if (typeof this.#config.apiKey !== "string") reject('Bundle ID must be string');
       if (typeof this.#config.callbackAfterTap !== 'function') reject('Callback must be function');
       AsyncStorage.setItem('config', JSON.stringify(this.#config)) // config's "callbackAfterTap" property gets discarded automatically when stringifying
         .then(res => resolve(res))
@@ -145,7 +147,7 @@ class WDCPush {
               fcmToken: fcmToken,
               ...deviceInfo
             };
-            this.sendToBackend("https://push.setrowid.com/mobile/v1/register.php", {}, reqBody).then(res => console.log(res));
+            this.sendRequest("https://push.setrowid.com/mobile/v1/register.php", {}, reqBody).then(res => console.log(res));
           });
           console.log("Getting new token...");
           resolve(fcmToken);
@@ -183,7 +185,7 @@ class WDCPush {
     })
   }
 
-  sendToBackend(url, headers, body, method='POST') {
+  sendRequest(url, headers, body, method='POST') {
     return new Promise((resolve, reject) => {
       fetch(url, {
         method: method,
@@ -214,14 +216,14 @@ class WDCPush {
         reqBody.data = {
           some_key: 'some value',
           sound: 'default',
-          title: 'Check this Mobile (title)',
+          title: 'Notification testing (title)',
           body: 'Rich Notification testing (body)',
           badge: 0,
           subtitle: '',
           click_action: '',
           android_channel_id: 'push',
           tag: 'WDCPush',
-          image: "http://www.three.co.uk/hub/wp-content/uploads/Google-logo-1-resized.jpg",
+          image: "",
           ...data
         };
       }else if(Platform.OS === "ios") {
@@ -234,7 +236,7 @@ class WDCPush {
           sendId: 1
         };
         reqBody.notification = {
-          title: 'Check this Mobile (title)',
+          title: 'Notification testing (title)',
           body: 'Notification testing (body)',
           sound: 'default',
           badge: 0,
@@ -248,7 +250,7 @@ class WDCPush {
         Authorization: 'key='+appServerKey
       };
 
-      this.sendToBackend('https://fcm.googleapis.com/fcm/send', reqHeaders , reqBody)
+      this.sendRequest('https://fcm.googleapis.com/fcm/send', reqHeaders , reqBody)
         .then((res) => {
           resolve(res);
         })
@@ -285,7 +287,6 @@ class WDCPush {
     return firebase.notifications().onNotificationDisplayed(async (notification: Notification) => {
       // ANDROID: Remote notifications do not contain the channel ID. You will have to specify this manually if you'd like to re-display the notification.
       console.log('Event: Notification displayed - onNotificationDisplayed', notification);
-      // this.displayLocalNotification(notification); // Android'de sonsuz döngüye sokuyor
       if (Platform.OS === 'ios') {
         this.sendLog('display', notification);
       }
@@ -294,7 +295,6 @@ class WDCPush {
 
   onNotificationListener() {
     return firebase.notifications().onNotification((notification: Notification) => {
-      // BURAYI TEST ET==> notification.android.setChannelId('setrow-push').setSound('default');
       console.log('Event: Notification received - onNotification', notification);
       this.displayLocalNotification(notification);
     });
@@ -327,7 +327,7 @@ class WDCPush {
               newFcmToken: newFcmToken,
               ...deviceInfo
             };
-            this.sendToBackend("https://push.setrowid.com/mobile/v1/update.php", {}, reqBody,'PATCH')
+            this.sendRequest("https://push.setrowid.com/mobile/v1/update.php", {}, reqBody,'PATCH')
           });
         }
       }
@@ -336,7 +336,7 @@ class WDCPush {
 
   checkIfOpenedByNotification() {
     return new Promise(async (resolve, reject) => {
-      // To check if the app was opened by a notification being clicked / tapped / opened :
+      // Check if the app was opened by a notification tap
       const notificationOpen: NotificationOpen = await firebase.notifications().getInitialNotification();
       if (notificationOpen) {
         // App was opened by a notification
@@ -404,7 +404,7 @@ class WDCPush {
               apiKey: this.#config.apiKey,
               fcmToken: fcmTokenToDelete
             };
-            return this.sendToBackend("https://push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
+            return this.sendRequest("https://push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
           }else {
             return 'fcmToken not found in local storage when unsubscribing';
           }
@@ -421,9 +421,9 @@ class WDCPush {
     return await AsyncStorage.getItem('isSubscribed') === 'true';
   }
 
-  async goToSettings() {
+  async goToNotificationSettings() {
     if(Platform.OS === 'ios') {
-      const appUrl = 'app-settings://notification/com.rnpush';
+      const appUrl = 'app-settings://notification/'+this.#config.bundleId;
       await Linking.openURL(appUrl);
     }
   }
@@ -445,13 +445,16 @@ class WDCPush {
       apiKey: localConfig.apiKey,
       fcmToken: locaFcmToken,
       event: eventType,
-      displayedAt: Math.floor(Date.now() / 1000),
-      tappedAt: Math.floor(Date.now() / 1000),
       sendId: sendId,
       tag: tag
     };
+    if (eventType === 'display') {
+      reqBody.displayedAt = Math.floor(Date.now() / 1000);
+    }else if (eventType === 'tap') {
+      reqBody.tappedAt = Math.floor(Date.now() / 1000);
+    }
     console.log("Log body:", reqBody);
-    this.sendToBackend("https://push.setrowid.com/mobile/v1/log.php", {}, reqBody).then(res => console.log(res));
+    this.sendRequest("https://push.setrowid.com/mobile/v1/log.php", {}, reqBody).then(res => console.log(res));
   }
 
   createListeners() {
