@@ -229,7 +229,9 @@ class WDCPush {
         reqBody.content_available = true;
         reqBody.data = {
           some_key: 'some value',
-          sound: 'default'
+          sound: 'default',
+          tag: 'WDCPush',
+          sendId: 1
         };
         reqBody.notification = {
           title: 'Check this Mobile (title)',
