@@ -145,7 +145,7 @@ class WDCPush {
               fcmToken: fcmToken,
               ...deviceInfo
             };
-            this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/register.php", {}, reqBody).then(res => console.log(res));
+            this.sendToBackend("https://push.setrowid.com/mobile/v1/register.php", {}, reqBody).then(res => console.log(res));
           });
           console.log("Getting new token...");
           resolve(fcmToken);
@@ -325,7 +325,7 @@ class WDCPush {
               newFcmToken: newFcmToken,
               ...deviceInfo
             };
-            this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/update.php", {}, reqBody,'PATCH')
+            this.sendToBackend("https://push.setrowid.com/mobile/v1/update.php", {}, reqBody,'PATCH')
           });
         }
       }
@@ -402,7 +402,7 @@ class WDCPush {
               apiKey: this.#config.apiKey,
               fcmToken: fcmTokenToDelete
             };
-            return this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
+            return this.sendToBackend("https://push.setrowid.com/mobile/v1/delete.php", {}, reqBody,'DELETE')
           }else {
             return 'fcmToken not found in local storage when unsubscribing';
           }
@@ -449,7 +449,7 @@ class WDCPush {
       tag: tag
     };
     console.log("Log body:", reqBody);
-    this.sendToBackend("https://beta.push.setrowid.com/mobile/v1/log.php", {}, reqBody).then(res => console.log(res));
+    this.sendToBackend("https://push.setrowid.com/mobile/v1/log.php", {}, reqBody).then(res => console.log(res));
   }
 
   createListeners() {
