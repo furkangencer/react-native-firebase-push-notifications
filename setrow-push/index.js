@@ -3,7 +3,7 @@ import firebase from 'react-native-firebase';
 import type { Notification, NotificationOpen, RemoteMessage } from 'react-native-firebase';
 import DeviceInfo from 'react-native-device-info';
 
-class WDCPush {
+class SetrowPush {
   #config = {
     apiKey: "",
     userEmail: "",
@@ -222,7 +222,7 @@ class WDCPush {
           subtitle: '',
           click_action: '',
           android_channel_id: 'push',
-          tag: 'WDCPush',
+          tag: 'SetrowPush',
           image: "",
           ...data
         };
@@ -232,7 +232,7 @@ class WDCPush {
         reqBody.data = {
           some_key: 'some value',
           sound: 'default',
-          tag: 'WDCPush'
+          tag: 'SetrowPush'
         };
         reqBody.notification = {
           title: 'Notification testing (title)',
@@ -241,7 +241,7 @@ class WDCPush {
           badge: 0,
           subtitle: '',
           click_action: '',
-          tag: 'WDCPush',
+          tag: 'SetrowPush',
           ...data
         }
       }
@@ -465,13 +465,13 @@ class WDCPush {
   }
 }
 
-const wdcPush = new WDCPush();
-export default wdcPush;
+const setrowPush = new SetrowPush();
+export default setrowPush;
 
 export let backgroundMessaging = async (message: RemoteMessage) => {
   // handle your message
   console.log(message);
   message._data = message.data;
-  wdcPush.displayLocalNotification(message, true);
+  setrowPush.displayLocalNotification(message, true);
   return Promise.resolve();
 };

@@ -1,6 +1,6 @@
 import React, { useEffect , useState} from 'react';
 import {Alert, StyleSheet, Platform, Image, Text, View, Button, Switch, AsyncStorage} from 'react-native';
-import PushService from "./wdc-push";
+import PushService from "./setrow-push";
 
 export default App = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
