@@ -1,3 +1,6 @@
+/**
+ * A push notificaiton library for Setrow customers.
+ */
 import { PermissionsAndroid, Platform, AsyncStorage, Linking } from 'react-native';
 import firebase from 'react-native-firebase';
 import type { Notification, NotificationOpen, RemoteMessage } from 'react-native-firebase';
@@ -17,7 +20,7 @@ class SetrowPush {
   #notificationOpenedListener = null;
 
   /**
-   * Initiates the Push Notification Service
+   * Initiate Push Notification Service
    * @param config {object} Config object
    * @returns {Promise<R>}
    */
@@ -32,6 +35,11 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Set email for current user
+   * @param email {string} Email
+   * @returns {Promise<R>}
+   */
   setEmail(email) {
     return new Promise((resolve, reject) => {
       if (typeof email !== 'string' || (email.length > 0 && !this.validateEmail(email)) ) reject('Email must be valid');
@@ -43,6 +51,11 @@ class SetrowPush {
     });
   }
 
+  /**
+   * Set callback to run after notification tappings
+   * @param callback {function}
+   * @returns {Promise<R>}
+   */
   setCallback(callback) {
     return new Promise((resolve, reject) => {
       if(typeof callback !== "function") reject('Callback must be a function');
@@ -51,6 +64,11 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Validate email
+   * @param email {string} Email
+   * @returns {boolean}
+   */
   validateEmail(email) {
     let re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(String(email).toLowerCase());
@@ -95,6 +113,10 @@ class SetrowPush {
     });
   }
 
+  /**
+   * Subscribe the user: Request permission for notifications and get FCM Token afterwards
+   * @returns {Promise<R>}
+   */
   requestPermissionAndGetToken() {
     return new Promise((resolve, reject) => {
       this.requestPermission().then(async (res) => {
@@ -104,6 +126,10 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Check whether the user has permission for notifications
+   * @returns {Promise<R>}
+   */
   checkPermission() {
     return new Promise( async (resolve, reject) => {
       const enabled = await firebase.messaging().hasPermission();
@@ -117,6 +143,10 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Request permission for notifications
+   * @returns {Promise<R>}
+   */
   requestPermission() {
     return new Promise(async (resolve, reject) => {
       firebase.messaging().requestPermission()
@@ -131,6 +161,10 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Retrieve FCM token for current subscription. Note that this function should be called after permission request
+   * @returns {Promise<R>}
+   */
   getToken() {
     return new Promise(async (resolve, reject) => {
       await AsyncStorage.setItem('isSubscribed', 'true');
@@ -161,6 +195,10 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Check the permission for external storage access
+   * @returns {Promise<R>}
+   */
   checkExternalStoragePermission() {
     return new Promise((resolve, reject) => {
       // Only necessary for Android
@@ -185,6 +223,14 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Make request to a URL specified
+   * @param url {string}
+   * @param headers {Object}
+   * @param body {Object}
+   * @param method {string}
+   * @returns {Promise<R>}
+   */
   sendRequest(url, headers, body, method='POST') {
     return new Promise((resolve, reject) => {
       fetch(url, {
@@ -203,6 +249,12 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Send notification to user.
+   * @param appServerKey {string} Firebase Server Key
+   * @param data {Object}
+   * @returns {Promise<R>}
+   */
   requestFCMEndpoint(appServerKey, data) {
     return new Promise(async (resolve, reject) => {
       let token = await this.getToken();
@@ -259,6 +311,10 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Get device information
+   * @returns {Promise<R>}
+   */
   getDeviceInfo() {
     return new Promise(async (resolve, reject)=>{
       let infoObject = {
@@ -352,6 +408,11 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Display notification
+   * @param notification {Notification}
+   * @param dataOnly=false {boolean}
+   */
   displayLocalNotification(notification: Notification, dataOnly=false) {
     this.createAndroidChannel().then(async () => {
       let notID = dataOnly ? notification._messageId : notification._notificationId;
@@ -391,6 +452,10 @@ class SetrowPush {
     });
   }
 
+  /**
+   * Unsubscribe the user
+   * @returns {Promise<R>}
+   */
   unsubscribe() {
     return new Promise(async (resolve, reject) => {
       let fcmTokenToDelete = await AsyncStorage.getItem('fcmToken');
@@ -416,10 +481,18 @@ class SetrowPush {
     })
   }
 
+  /**
+   * Check if the user is subscribed or not
+   * @returns {Promise<boolean>}
+   */
   async checkIfSubscribed() {
     return await AsyncStorage.getItem('isSubscribed') === 'true';
   }
 
+  /**
+   * iOS Only! - Open notification settings for the app. BundleID should be set first.
+   * @returns {Promise<void>}
+   */
   async goToNotificationSettings() {
     if(Platform.OS === 'ios') {
       const appUrl = 'app-settings://notification/'+this.#config.bundleId;
@@ -456,6 +529,9 @@ class SetrowPush {
     this.sendRequest("https://push.setrowid.com/mobile/v1/log.php", {}, reqBody).then(res => console.log(res));
   }
 
+  /**
+   * Create the event-listeners to handle notification displays/taps
+   */
   createListeners() {
     this.#notificationOpenedListener = this.onNotificationOpenedListener();
     this.#notificationDisplayedListener = this.onNotificationDisplayedListener();
@@ -468,6 +544,11 @@ class SetrowPush {
 const setrowPush = new SetrowPush();
 export default setrowPush;
 
+/**
+ * Background Messaging Task
+ * @param message
+ * @returns {Promise<resolve>}
+ */
 export let backgroundMessaging = async (message: RemoteMessage) => {
   // handle your message
   console.log(message);
