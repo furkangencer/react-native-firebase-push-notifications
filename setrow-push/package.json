@@ -1,0 +1,21 @@
+{
+  "name": "@setrow/setrow-push",
+  "version": "1.0.2",
+  "description": "A push notification library for Setrow customers.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "push-notification",
+    "notification",
+    "push",
+    "firebase"
+  ],
+  "dependencies": {
+    "react-native-device-info": "^3.1.4",
+    "react-native-firebase": "^5.5.6"
+  },
+  "author": "Setrow",
+  "license": "ISC"
+}
