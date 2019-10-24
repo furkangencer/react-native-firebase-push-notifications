@@ -1,7 +1,7 @@
 {
-  "name": "@setrow/setrow-push",
-  "version": "1.0.2",
-  "description": "A push notification library for Setrow customers.",
+  "name": "@setrow/setrow-rn-push",
+  "version": "1.0.0",
+  "description": "A React Native push notification library for Setrow customers.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

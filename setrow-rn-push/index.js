@@ -1,12 +1,13 @@
-/**
- * A push notificaiton library for Setrow customers.
- */
 import { PermissionsAndroid, Platform, AsyncStorage, Linking } from 'react-native';
 import firebase from 'react-native-firebase';
 import type { Notification, NotificationOpen, RemoteMessage } from 'react-native-firebase';
 import DeviceInfo from 'react-native-device-info';
 
-class SetrowPush {
+/**
+ * React Native Push Notification Service for Setrow Customers
+ * @module SetrowRNPush
+ */
+class SetrowRNPush {
   #config = {
     apiKey: "",
     userEmail: "",
@@ -22,9 +23,13 @@ class SetrowPush {
   /**
    * Initiate Push Notification Service
    * @param config {object} Config object
+   * @param config.apiKey {String} Your Setrow API Key
+   * @param [config.userEmail=''] {String} Device user's email
+   * @param [config.bundleId=''] {String} Your iOS Bundle ID
+   * @param [config.callbackAfterTap=function(){}] {function} The callback to run after notification tap
    * @returns {Promise<R>}
    */
-  init(config={}) {
+  init(config) {
     return new Promise((resolve, reject) => {
       this.checkParams(config)
         .then(() => this.checkIfOpenedByNotification())
@@ -74,7 +79,7 @@ class SetrowPush {
     return re.test(String(email).toLowerCase());
   }
 
-  checkParams(config) {
+  checkParams(config={}) {
     return new Promise(async (resolve, reject) => {
       this.#config = { ...this.#config, ...config};
       if (typeof this.#config.apiKey !== "string") reject('Key must be string');
@@ -114,8 +119,8 @@ class SetrowPush {
   }
 
   /**
-   * Subscribe the user: Request permission for notifications and get FCM Token afterwards
-   * @returns {Promise<R>}
+   * Subscribe the user. Request permission for notifications and get FCM Token as promise resolves.
+   * @returns {Promise<string>} Resolves with FCM Token
    */
   requestPermissionAndGetToken() {
     return new Promise((resolve, reject) => {
@@ -127,8 +132,8 @@ class SetrowPush {
   }
 
   /**
-   * Check whether the user has permission for notifications
-   * @returns {Promise<R>}
+   * Check whether the user has permission for notifications or not.
+   * @returns {Promise<string>}
    */
   checkPermission() {
     return new Promise( async (resolve, reject) => {
@@ -145,7 +150,7 @@ class SetrowPush {
 
   /**
    * Request permission for notifications
-   * @returns {Promise<R>}
+   * @returns {Promise<string>}
    */
   requestPermission() {
     return new Promise(async (resolve, reject) => {
@@ -163,7 +168,7 @@ class SetrowPush {
 
   /**
    * Retrieve FCM token for current subscription. Note that this function should be called after permission request
-   * @returns {Promise<R>}
+   * @returns {Promise<R>} Resolves with FCM Token on success
    */
   getToken() {
     return new Promise(async (resolve, reject) => {
@@ -197,7 +202,7 @@ class SetrowPush {
 
   /**
    * Check the permission for external storage access
-   * @returns {Promise<R>}
+   * @returns {Promise<string>}
    */
   checkExternalStoragePermission() {
     return new Promise((resolve, reject) => {
@@ -252,7 +257,7 @@ class SetrowPush {
   /**
    * Send notification to user.
    * @param appServerKey {string} Firebase Server Key
-   * @param data {Object}
+   * @param data {Object} Check https://firebase.google.com/docs/cloud-messaging/http-server-ref for more.
    * @returns {Promise<R>}
    */
   requestFCMEndpoint(appServerKey, data) {
@@ -274,7 +279,7 @@ class SetrowPush {
           subtitle: '',
           click_action: '',
           android_channel_id: 'push',
-          tag: 'SetrowPush',
+          tag: 'SetrowRNPush',
           image: "",
           ...data
         };
@@ -284,7 +289,7 @@ class SetrowPush {
         reqBody.data = {
           some_key: 'some value',
           sound: 'default',
-          tag: 'SetrowPush'
+          tag: 'SetrowRNPush'
         };
         reqBody.notification = {
           title: 'Notification testing (title)',
@@ -293,7 +298,7 @@ class SetrowPush {
           badge: 0,
           subtitle: '',
           click_action: '',
-          tag: 'SetrowPush',
+          tag: 'SetrowRNPush',
           ...data
         }
       }
@@ -313,21 +318,25 @@ class SetrowPush {
 
   /**
    * Get device information
-   * @returns {Promise<R>}
+   * @returns {Promise<R>} Resolves with device info object
    */
   getDeviceInfo() {
     return new Promise(async (resolve, reject)=>{
-      let infoObject = {
-        deviceOs: Platform.OS,
-        deviceUniqueId: await DeviceInfo.getUniqueId().then(id => id),
-        deviceBrand: await  DeviceInfo.getBrand().then(brand=>brand),
-        deviceModel: await DeviceInfo.getModel().then(model => model),
-        deviceId: await DeviceInfo.getDeviceId().then(id => id),
-        deviceOsVersion: await DeviceInfo.getSystemVersion().then(version=>version)
-        //Product: await DeviceInfo.getProduct().then(product => product),
-      };
-      //console.log(infoObject);
-      resolve(infoObject);
+      try {
+        let infoObject = {
+          deviceOs: Platform.OS,
+          deviceUniqueId: await DeviceInfo.getUniqueId().then(id => id),
+          deviceBrand: await  DeviceInfo.getBrand().then(brand=>brand),
+          deviceModel: await DeviceInfo.getModel().then(model => model),
+          deviceId: await DeviceInfo.getDeviceId().then(id => id),
+          deviceOsVersion: await DeviceInfo.getSystemVersion().then(version=>version)
+          //Product: await DeviceInfo.getProduct().then(product => product),
+        };
+        //console.log(infoObject);
+        resolve(infoObject);
+      }catch (err) {
+        reject(err);
+      }
     });
   }
 
@@ -409,9 +418,9 @@ class SetrowPush {
   }
 
   /**
-   * Display notification
+   * Display notification. For Android, dataOnly value must be set to true.
    * @param notification {Notification}
-   * @param dataOnly=false {boolean}
+   * @param [dataOnly=false] {boolean}
    */
   displayLocalNotification(notification: Notification, dataOnly=false) {
     this.createAndroidChannel().then(async () => {
@@ -483,7 +492,7 @@ class SetrowPush {
 
   /**
    * Check if the user is subscribed or not
-   * @returns {Promise<boolean>}
+   * @returns {boolean}
    */
   async checkIfSubscribed() {
     return await AsyncStorage.getItem('isSubscribed') === 'true';
@@ -541,12 +550,12 @@ class SetrowPush {
   }
 }
 
-const setrowPush = new SetrowPush();
+const setrowPush = new SetrowRNPush();
 export default setrowPush;
 
 /**
  * Background Messaging Task
- * @param message
+ * @param message {RemoteMessage} FCM message
  * @returns {Promise<resolve>}
  */
 export let backgroundMessaging = async (message: RemoteMessage) => {

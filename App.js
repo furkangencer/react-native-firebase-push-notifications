@@ -1,6 +1,6 @@
 import React, { useEffect , useState} from 'react';
 import {Alert, StyleSheet, Platform, Image, Text, View, Button, Switch, AsyncStorage} from 'react-native';
-import PushService from "./setrow-push";
+import PushService from "./setrow-rn-push";
 
 export default App = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -43,7 +43,7 @@ export default App = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.mainText}>WDC Push{'\n'} React Native w/ Firebase</Text>
+      <Text style={styles.mainText}>Setrow Push{'\n'} React Native w/ Firebase</Text>
       <View style={styles.modules}>
         <Switch onValueChange = {(newValue) => {
           if(newValue) {

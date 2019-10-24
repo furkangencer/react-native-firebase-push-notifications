@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, StyleSheet, Platform, Image, Text, View, Button, ScrollView } from 'react-native';
-import PushService from "./setrow-push";
+import PushService from "./setrow-rn-push";
 
 export default class App extends React.Component {
   constructor() {
