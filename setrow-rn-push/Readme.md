@@ -1,3 +1,296 @@
+# Introduction
+In this module, it's intended to make it possible for Setrow customers who use React Native to send push notifications to their users.
+
+# Pre-Install
+## 1) Create Firebase Project
+First of all, you have to create a Google Firebase Project [here](https://console.firebase.google.com/) (It's free)
+
+![](https://thefinnternet.com/static/5c9a91c7e6e006e80935cf165d34f952/782f4/create_project.png)
+
+## 2) Add Apps
+Add iOS and Android apps as per your requirement
+
+![](https://thefinnternet.com/static/7c51faa74315345e378c5c29c165e7d0/3bb78/add_app.png)
+
+## 3) Register Android
+The Android Package Name can be found in /android/app/build.grade as applicationId. Defaults to com.project_name
+
+![](https://thefinnternet.com/static/6be90f0d5c41813bd048830e351f6cbe/b9e4f/register_android.png)
+
+#### Download google-services.json
+A google-services.json file contains all of the information required by the Firebase Android SDK to connect to your Firebase project. 
+
+After creating your Android app, you'll be prompted to download the google-services.json file. Once downloaded, place this file in the root of your project at <b>android/app/google-services.json.</b>
+
+![](https://thefinnternet.com/static/b965d3dc9e57bfe4ab250388ff125eb8/0783d/android_dir.png)
+
+(For more details, check the official Firebase docs [here](https://firebase.google.com/docs/android/setup#console).)
+
+## 4) Register iOS
+Essentially the same as Android but grab the bundle id from the project in XCode.
+
+#### Download GoogleService-Info.plist
+A GoogleService-Info.plist file contains all of the information required by the Firebase iOS SDK to connect to your Firebase project.
+
+Once downloaded, add the file to your iOS app using 'File > Add Files to "[YOUR APP NAME]"…' in XCode.
+
+(For more details, check the official Firebase docs [here](https://firebase.google.com/docs/ios/setup#add_firebase_to_your_app))
+
+#### Upload APNS Keys
+In Firebase console, you have to include either APNs Authentication Key or APNs Certificate in Project Settings > Cloud Messaging in order to receive push notifications.
+
+![](https://i.ibb.co/stLBbJN/apns-auth-key.png)
+
+(For more details, check the official Firebase docs [here](https://firebase.google.com/docs/cloud-messaging/ios/certs) to see how you can create these keys.)
+
+# Installation
+    $ npm install @setrow/setrow-rn-push --save
+    
+# Post-Install
+After installation, run the following command:
+
+    $ react-native link react-native-firebase
+    
+### Android specific steps
+1- Your <b>android/app/build.gradle</b> file should look like the following:
+
+    dependencies {
+        implementation project(':react-native-device-info')
+        implementation project(':react-native-firebase')
+        //...
+        implementation "com.google.firebase:firebase-analytics:17.2.0"
+        implementation "com.google.firebase:firebase-messaging:20.0.0"
+        //...
+      
+      // Add the following to the VERY BOTTOM of the file
+      apply plugin: 'com.google.gms.google-services'
+
+2- In <b>android/gradle/wrapper/gradle-wrapper.properties</b>, make sure your Gradle version is at least v4.4 or above. If not, update the gradle URL to gradle-5.4.1-all.zip
+
+3- Your <b>android/build.gradle</b> should look like the following:
+
+    buildscript {
+        repositories {
+            google()  // <-- Check this line exists and is above jcenter
+            jcenter()
+            // ...
+        }
+        dependencies {
+            classpath("com.android.tools.build:gradle:3.4.1")
+            classpath 'com.google.gms:google-services:4.2.0'
+            // ...
+        }
+    }
+    allprojects {
+        repositories {
+            mavenLocal()
+            google() // <-- Add this line above jcenter
+            jcenter()
+            maven {
+                // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+                url "$rootDir/../node_modules/react-native/android"
+            }
+            maven {
+                // Android JSC is installed from npm
+                url("$rootDir/../node_modules/jsc-android/dist")
+            }
+        }
+    }
+
+4- Your <b>MainApplication.java</b> should like following:
+
+    //...
+    import com.learnium.RNDeviceInfo.RNDeviceInfo;
+    import io.invertase.firebase.RNFirebasePackage;
+    import io.invertase.firebase.messaging.RNFirebaseMessagingPackage;
+    import io.invertase.firebase.notifications.RNFirebaseNotificationsPackage;
+    
+    //...
+    
+    protected List<ReactPackage> getPackages() {
+      @SuppressWarnings("UnnecessaryLocalVariable")
+      List<ReactPackage> packages = new PackageList(this).getPackages();
+        //...
+        packages.add(new RNFirebaseMessagingPackage());
+        packages.add(new RNFirebaseNotificationsPackage());
+      return packages;
+    }
+
+
+5- Your <b>AndroidManifest.xml</b> should include following lines:
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    
+    <application
+    android:launchMode="singleTop">
+    
+    <service android:name="io.invertase.firebase.messaging.RNFirebaseMessagingService">
+        <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
+    </service>
+    <service android:name="io.invertase.firebase.messaging.RNFirebaseInstanceIdService">
+        <intent-filter>
+            <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
+        </intent-filter>
+    </service>
+    <service android:name="io.invertase.firebase.messaging.RNFirebaseBackgroundMessagingService" />
+
+6- Your <b>/app/settings.gradle</b> file should look like this:
+
+    //...
+    include ':react-native-device-info'
+    project(':react-native-device-info').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-device-info/android')
+    include ':react-native-firebase'
+    project(':react-native-firebase').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-firebase/android')
+    apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesSettingsGradle(settings)
+    include ':app'
+
+
+### iOS specific steps
+Turn on following two capabilities in Xcode:
+
+a) Push Notifications
+
+b) Background Modes - Check only Remote Notifications
+
+![](https://miro.medium.com/max/701/1*7_iXN53EFpp1GcKSvqgqXg.jpeg)
+
+Make sure your Podfile includes the lines below and then run `pod install`
+
+    # Uncomment the line below to define a global platform for your project
+    platform :ios, '9.0'
+    
+    target 'ReactPushNotifications' do
+      # Uncomment the next line if you're using Swift or would like to use dynamic frameworks
+      # use_frameworks!
+      
+      #pod 'RNFirebase', :path => '../node_modules/react-native-firebase'
+      pod 'Firebase/Analytics'
+      pod 'Firebase/Messaging'
+      pod 'RNDeviceInfo', :path => '../node_modules/react-native-device-info'
+    end
+
+Your AppDelegate should look like the following:
+
+    // ios/Notifications/AppDelegate.m
+    
+    #import <Firebase.h>
+    #import "RNFirebaseNotifications.h"
+    #import "RNFirebaseMessaging.h"
+    
+    //...
+    
+    @implementation AppDelegate
+    
+    - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+    {
+      //...
+      [FIRApp configure];
+      [RNFirebaseNotifications configure];
+      //...
+    }
+    
+    //...
+    
+    - (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification {
+      [[RNFirebaseNotifications instance] didReceiveLocalNotification:notification];
+    }
+    
+    - (void)application:(UIApplication *)application didReceiveRemoteNotification:(nonnull NSDictionary *)userInfo
+    fetchCompletionHandler:(nonnull void (^)(UIBackgroundFetchResult))completionHandler{
+      [[RNFirebaseNotifications instance] didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
+    }
+    
+    - (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings {
+      [[RNFirebaseMessaging instance] didRegisterUserNotificationSettings:notificationSettings];
+    }
+    
+    -(void) userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler {
+        [[RNFirebaseMessaging instance] didReceiveRemoteNotification:response.notification.request.content.userInfo];
+        completionHandler();
+    }
+    
+    //...
+    
+    @end
+
+# Import
+    import PushService from "@setrow/setrow-rn-push";
+
+# Usage
+You should first call the <b>init</b> function and pass the required parameters in an object like below:
+
+    PushService.init({
+              apiKey: '<YOUR_SETROW_API_KEY>',  // Required
+              bundleId: '<YOUR_BUNDLE_ID>',     // Optional
+              userEmail: '',                    // Optional
+              callbackAfterTap: function (data) {
+                // Optional
+                // Here, you can process the data you set when creating the notification
+                // For example, you can do stuff like navigation accroding to data object
+              }
+            })
+              .then((res) => {
+                // Everything is up and running! You can now proceed to subscribe your users like below:
+                PushService.requestPermissionAndGetToken().then(token => console.log(token)).catch(err => console.log(err));
+              })
+              .catch(err => console.log('Can\'t initiate the push service.', err))
+
+# Example
+    import React, { useEffect , useState} from 'react';
+    import {Alert, StyleSheet, View, Switch} from 'react-native';
+    import PushService from '@setrow/setrow-rn-push';
+    
+    export default App = () => {
+      const [isSubscribed, setIsSubscribed] = useState(false);
+    
+      useEffect(() => {
+        PushService.init({
+          apiKey: '<YOUR_SETROW_API_KEY>'
+        })
+          .then(async (res) => {
+            setIsSubscribed(await PushService.checkIfSubscribed());
+          })
+          .catch(err => console.log('Can\'t initiate the push service.', err))
+      }, []);
+    
+      const styles = StyleSheet.create({
+        container: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#F5FCFF'
+        },
+        modules: {
+          margin: 5
+        }
+      });
+    
+      return (
+        <View style={styles.container}>
+          <View style={styles.modules}>
+            <Switch onValueChange = {(newValue) => {
+              if(newValue) {
+                PushService.requestPermissionAndGetToken()
+                .then(res => Alert.alert('Result', res))
+                .catch(err => Alert.alert('Error', err))
+              }else {
+                PushService.unsubscribe()
+                  .then(res => console.log("Unsubscribed"))
+                  .catch(err => console.log("Error when unsubscribing"))
+              }
+              setIsSubscribed(newValue);
+            }} value = {isSubscribed}/>
+          </View>
+        </View>
+      );
+    }
+
 # API
 
 <!-- Generated by documentation.js. Update this documentation by updating the source code. -->

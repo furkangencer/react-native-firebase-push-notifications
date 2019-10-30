@@ -1,6 +1,6 @@
 {
   "name": "@setrow/setrow-rn-push",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "description": "A React Native push notification library for Setrow customers.",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "push-notification",
     "notification",
     "push",
-    "firebase"
+    "firebase",
+    "setrow"
   ],
   "dependencies": {
     "react-native-device-info": "^3.1.4",
