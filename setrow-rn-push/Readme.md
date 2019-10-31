@@ -5,24 +5,24 @@ In this module, it's intended to make it possible for Setrow customers who use R
 ## 1) Create Firebase Project
 First of all, you have to create a Google Firebase Project [here](https://console.firebase.google.com/) (It's free)
 
-![](https://thefinnternet.com/static/5c9a91c7e6e006e80935cf165d34f952/782f4/create_project.png)
+![](https://docs.setrowid.com/assets/images/react-native-push/create_project.png)
 
 ## 2) Add Apps
 Add iOS and Android apps as per your requirement
 
-![](https://thefinnternet.com/static/7c51faa74315345e378c5c29c165e7d0/3bb78/add_app.png)
+![](https://docs.setrowid.com/assets/images/react-native-push/add_app.png)
 
 ## 3) Register Android
 The Android Package Name can be found in /android/app/build.grade as applicationId. Defaults to com.project_name
 
-![](https://thefinnternet.com/static/6be90f0d5c41813bd048830e351f6cbe/b9e4f/register_android.png)
+![](https://docs.setrowid.com/assets/images/react-native-push/register_android.png)
 
 #### Download google-services.json
 A google-services.json file contains all of the information required by the Firebase Android SDK to connect to your Firebase project. 
 
 After creating your Android app, you'll be prompted to download the google-services.json file. Once downloaded, place this file in the root of your project at <b>android/app/google-services.json.</b>
 
-![](https://thefinnternet.com/static/b965d3dc9e57bfe4ab250388ff125eb8/0783d/android_dir.png)
+![](https://docs.setrowid.com/assets/images/react-native-push/android_dir.png)
 
 (For more details, check the official Firebase docs [here](https://firebase.google.com/docs/android/setup#console).)
 
@@ -39,7 +39,7 @@ Once downloaded, add the file to your iOS app using 'File > Add Files to "[YOUR 
 #### Upload APNS Keys
 In Firebase console, you have to include either APNs Authentication Key or APNs Certificate in Project Settings > Cloud Messaging in order to receive push notifications.
 
-![](https://i.ibb.co/stLBbJN/apns-auth-key.png)
+![](https://docs.setrowid.com/assets/images/react-native-push/apns_auth_key.png)
 
 (For more details, check the official Firebase docs [here](https://firebase.google.com/docs/cloud-messaging/ios/certs) to see how you can create these keys.)
 
@@ -158,7 +158,7 @@ a) Push Notifications
 
 b) Background Modes - Check only Remote Notifications
 
-![](https://miro.medium.com/max/701/1*7_iXN53EFpp1GcKSvqgqXg.jpeg)
+![](https://docs.setrowid.com/assets/images/react-native-push/xcode_capabilities.jpeg)
 
 Make sure your Podfile includes the lines below and then run `pod install`
 
