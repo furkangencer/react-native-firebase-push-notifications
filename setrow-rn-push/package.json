@@ -1,6 +1,6 @@
 {
   "name": "@setrow/setrow-rn-push",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "A React Native push notification library for Setrow customers.",
   "main": "index.js",
   "scripts": {

@@ -241,6 +241,16 @@ You should first call the <b>init</b> function and pass the required parameters 
               })
               .catch(err => console.log('Can\'t initiate the push service.', err))
 
+Also, you should register the background handler in your <b>index.js</b> like the following:
+
+    // some other imports here...
+    import {backgroundMessaging} from './setrow-rn-push'; // <-- Import the backgroundMessaging function using destructuring
+    
+    // Current main application
+    AppRegistry.registerComponent(appName, () => App);
+    // New task registration
+    AppRegistry.registerHeadlessTask('RNFirebaseBackgroundMessage', () => backgroundMessaging); // <-- Add this line
+
 # Example
     import React, { useEffect , useState} from 'react';
     import {Alert, StyleSheet, View, Switch} from 'react-native';
