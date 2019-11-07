@@ -409,7 +409,7 @@ class SetrowRNPush {
         const notification: Notification = notificationOpen.notification;
         await firebase.notifications().removeDeliveredNotification(notification._notificationId);
         this.#config.callbackAfterTap(notification.data);
-        this.sendLog('tap', notification);
+        this.sendLog('tap', notification, {initial: true}); // set a custom param to let the backend know that the app is opened by notf. tap
       }else {
         console.log('Not opened by notification', notificationOpen);
       }
@@ -517,7 +517,7 @@ class SetrowRNPush {
     await firebase.messaging().unsubscribeFromTopic(topicName);
   }
 
-  async sendLog(eventType, notification) {
+  async sendLog(eventType, notification, customParam={}) {
     let sendId = (typeof notification._data.sendId !== 'undefined' ? notification._data.sendId : 0);
     let tag = (typeof notification.data.tag !== 'undefined' ? notification.data.tag : "");
     let localConfig = JSON.parse(await AsyncStorage.getItem('config'));
@@ -527,7 +527,9 @@ class SetrowRNPush {
       fcmToken: locaFcmToken,
       event: eventType,
       sendId: sendId,
-      tag: tag
+      tag: tag,
+      os: Platform.OS,
+      ...customParam
     };
     if (eventType === 'display') {
       reqBody.displayedAt = Math.floor(Date.now() / 1000);
